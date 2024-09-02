@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from config import Base
 
+
 class Client(Base):
     __tablename__ = 'clients'
 
@@ -17,3 +18,8 @@ class Client(Base):
     contracts = relationship("Contract", back_populates="client")
     events = relationship("Event", back_populates="client")
     commercial_contact = relationship("User", back_populates="clients")
+
+
+from model.user_model import User
+from model.contract_model import Contract
+from model.event_model import Event

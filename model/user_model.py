@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from config import Base
 
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -25,3 +26,7 @@ class User(Base):
 
     def check_password(self, raw_password):
         return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
+    
+from model.client_model import Client
+from model.contract_model import Contract
+from model.event_model import Event

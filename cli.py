@@ -1,7 +1,3 @@
-from model.client_model import Client
-from model.contract_model import Contract
-from model.event_model import Event
-from model.user_model import User
 
 import sentry_sdk
 
