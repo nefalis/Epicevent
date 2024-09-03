@@ -2,20 +2,20 @@ from sqlalchemy.orm import Session
 from model.user_model import User
 from datetime import datetime
 
+
 def get_all_users(db: Session):
     """
     Fonction pour récupérer et afficher tous les utilisateurs de la base de données
     """
     # Récupère tous les utilisateurs
     users = db.query(User).all()
-
     return users
+
 
 def create_user(db: Session, employee_number: str, complete_name: str, email: str, password: str, role: str):
     """
     Fonction pour créer un nouvel utilisateur dans la base de données
     """
-    # Création d'un nouvel objet User
     new_user = User(
         employee_number=employee_number,
         complete_name=complete_name,

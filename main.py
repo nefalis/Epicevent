@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session
 from config import SessionLocal
 from InquirerPy import inquirer
 from rich.console import Console
-from view.user_view import menu as user_menu
+from view.user_view import user_menu
+from view.client_view import client_menu
+from view.contract_view import contract_menu
 
 
 console = Console()
@@ -28,17 +30,17 @@ def main_menu():
             ).execute()
 
             if choice == "Utilisateur":
-                user_menu()
+                user_menu(db)
             elif choice == "Contrat":
-                console.print("[cyan]Menu Contrat (en développement)[/cyan]")
+                contract_menu(db)
             elif choice == "Événement":
                 console.print("[cyan]Menu Événement (en développement)[/cyan]")
             elif choice == "Client":
-                console.print("[cyan]Menu Client (en développement)[/cyan]")
+                client_menu(db)
             elif choice == "Quitter":
                 console.print("[red]Fermeture du programme...[/red]")
                 break
-            
+
     finally:
         db.close()
 

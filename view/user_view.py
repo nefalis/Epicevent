@@ -22,7 +22,7 @@ def get_role_color(role):
 
 def display_users(db: Session):
     """
-    Fonction pour afficher tous les utilisateurs dans une table formatée.
+    Fonction pour afficher tous les utilisateurs.
     """
     users = get_all_users(db)
     table = Table(title="Liste des Utilisateurs")
@@ -84,7 +84,7 @@ def prompt_create_user(db: Session):
         role=role
     )
 
-    console.print(f"\n [blue]Nouvel utilisateur créé : Nom: {new_user.complete_name}, Numéro d'employé: {new_user.employee_number}, Email: {new_user.email}, Département: {new_user.role} \n")
+    console.print(f"\n [blue]Nouvel utilisateur créé :[/blue] Nom: {new_user.complete_name}, Numéro d'employé: {new_user.employee_number}, Email: {new_user.email}, Département: {new_user.role} \n")
 
 
 def prompt_update_user(db: Session):
@@ -110,7 +110,7 @@ def prompt_delete_user(db: Session):
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
-def menu():
+def user_menu():
     db: Session = SessionLocal()
 
     try:
@@ -122,7 +122,7 @@ def menu():
                     "Créer un nouvel utilisateur",
                     "Modifier un utilisateur",
                     "Supprimer un utilisateur",
-                    "Quitter"
+                    "Retour au menu principal"
                 ]
             ).execute()
 
@@ -134,8 +134,7 @@ def menu():
                 prompt_update_user(db)
             elif choice == "Supprimer un utilisateur":
                 prompt_delete_user(db)
-            elif choice == "Quitter":
-                console.print("[red]Fermeture du programme...[/red]")
+            elif choice == "Retour au menu principal":
                 break
     finally:
         db.close()
