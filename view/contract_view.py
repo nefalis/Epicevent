@@ -8,7 +8,6 @@ from controller.contract_controller import (
     get_commercials,
 )
 from controller.client_controller import get_all_clients
-from controller.user_controller import get_all_users
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
@@ -60,17 +59,25 @@ def prompt_create_contract(db: Session):
     if not clients:
         console.print("[blue]Aucun client disponible pour créer un contrat.[/blue]")
         return
+    
+    
     if not commercials:
         console.print("[blue]Aucun commercial disponible pour créer un contrat.[/blue]")
         return
 
     client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
+    client_choices.insert(0, ("Retour en arrière", None))
+    
     commercial_choices = [(f"{commercial.id} - {commercial.complete_name}", commercial.id) for commercial in commercials]
 
-    client_id = inquirer.select(
+    selected_client_text = inquirer.select(
         message="Sélectionnez un client :",
         choices=[choice for choice, _ in client_choices]
     ).execute()
+
+    if selected_client_text == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
 
     client_id = next((id for text, id in client_choices if text == client_id), None)
 
@@ -118,12 +125,16 @@ def prompt_update_contract(db: Session):
         return
 
     contract_choices = [(f"{contract.id} - {contract.client.full_name}", contract.id) for contract in contracts]
+    contract_choices.insert(0, ("Retour en arrière", None))
 
-    contract_id = inquirer.select(
+    selected_contract_text = inquirer.select(
         message="Sélectionnez un contrat à modifier :",
         choices=[choice for choice, _ in contract_choices]
     ).execute()
 
+    if selected_contract_text == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
     contract_id = next((id for text, id in contract_choices if text == contract_id), None)
 
     contract = get_contract_by_id(db, contract_id)
@@ -167,11 +178,17 @@ def prompt_delete_contract(db: Session):
         return
 
     contract_choices = [(f"{contract.id} - {contract.client.full_name}", contract.id) for contract in contracts]
+    contract_choices.insert(0, ("Retour en arrière", None))
 
-    contract_id = inquirer.select(
+    selected_contract_text = inquirer.select(
         message="Sélectionnez un contrat à supprimer :",
         choices=[choice for choice, _ in contract_choices]
     ).execute()
+
+    
+    if selected_contract_text == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
 
     contract_id = next((id for text, id in contract_choices if text == contract_id), None)
 

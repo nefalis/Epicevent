@@ -54,6 +54,16 @@ def prompt_create_user(db: Session):
     """
     Fonction pour demander les informations de l'utilisateur pour la création.
     """
+
+    start_creation = inquirer.select(
+        message="Souhaitez-vous créer un nouvel utilisateur ?",
+        choices=["Oui", "Retour en arrière"]
+    ).execute()
+
+    if start_creation == "Retour en arrière":
+        console.print("\n[blue]Création annulée, retour en arrière.[/blue]\n")
+        return
+    
     employee_number = inquirer.text(
         message="Entrez le numéro d'employé:"
     ).execute()
@@ -88,6 +98,19 @@ def prompt_create_user(db: Session):
 
 
 def prompt_update_user(db: Session):
+    """
+    Fonction pour demander les informations pour mettre à jour un utilisateur avec possibilité de retour en arrière.
+    """
+    
+    start_update = inquirer.select(
+        message="Souhaitez-vous mettre à jour un utilisateur ?",
+        choices=["Oui", "Retour en arrière"]
+    ).execute()
+
+    if start_update == "Retour en arrière":
+        console.print("\n[blue]Mise à jour annulée, retour en arrière.[/blue]\n")
+        return
+
     user_id = int(inquirer.text(message="Entrez l'ID de l'utilisateur à modifier:").execute())
     complete_name = inquirer.text(message="Entrez le nouveau nom complet (laissez vide pour ne pas changer):").execute()
     email = inquirer.text(message="Entrez le nouvel email (laissez vide pour ne pas changer):").execute()
@@ -102,7 +125,21 @@ def prompt_update_user(db: Session):
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
+
 def prompt_delete_user(db: Session):
+    """
+    Fonction pour demander la suppression d'un utilisateur avec possibilité de retour en arrière.
+    """
+
+    start_deletion = inquirer.select(
+        message="Souhaitez-vous supprimer un utilisateur ?",
+        choices=["Oui", "Retour en arrière"]
+    ).execute()
+
+    if start_deletion == "Retour en arrière":
+        console.print("\n[blue]Suppression annulée, retour en arrière.[/blue]\n")
+        return
+    
     user_id = int(inquirer.text(message="Entrez l'ID de l'utilisateur à supprimer:").execute())
     user = delete_user(db, user_id)
     if user:
@@ -110,7 +147,12 @@ def prompt_delete_user(db: Session):
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
+
 def user_menu():
+    """
+    Menu principal pour la gestion des utilisateurs.
+    """
+
     db: Session = SessionLocal()
 
     try:

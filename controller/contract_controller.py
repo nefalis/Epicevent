@@ -71,3 +71,9 @@ def get_commercials(db: Session):
     """
     commercials = db.query(User).filter(User.role == "commercial").all()
     return commercials
+
+def get_contracts_by_client_id(db: Session, client_id: int):
+    """
+    Récupère tous les contrats associés à un client spécifique.
+    """
+    return db.query(Contract).filter(Contract.client_id == client_id).all()

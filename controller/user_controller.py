@@ -70,3 +70,9 @@ def delete_user(db: Session, user_id: int):
     db.delete(user)
     db.commit()
     return user
+
+def get_users_by_role(db: Session, role: str):
+    """
+    Récupère tous les utilisateurs ayant un rôle spécifique.
+    """
+    return db.query(User).filter(User.role == role).all()

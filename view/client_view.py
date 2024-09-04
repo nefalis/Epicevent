@@ -8,7 +8,15 @@ from config import SessionLocal
 console = Console()
 
 def display_clients(db: Session):
+    """
+    Affiche la liste des clients.
+    """
+
     clients = get_all_clients(db)
+    if not clients:
+        console.print("\n[blue]Aucun client trouvé.[/blue]\n")
+        return
+
     table = Table(title="Liste des Clients")
 
     table.add_column("ID", justify="right", style="cyan", no_wrap=True)
@@ -21,7 +29,9 @@ def display_clients(db: Session):
     table.add_column("Commercial", style="blue")
 
     for client in clients:
-        commercial_name = client.commercial_contact.complete_name if client.commercial_contact else "N/A"
+        commercial_name = (
+            client.commercial_contact.complete_name if client.commercial_contact else "N/A"
+        )
         table.add_row(
             str(client.id),
             client.full_name,
@@ -30,7 +40,7 @@ def display_clients(db: Session):
             client.company_name or "N/A",
             str(client.creation_date),
             str(client.last_update),
-            commercial_name
+            commercial_name,
         )
 
     console.print("\n")
@@ -48,15 +58,34 @@ def select_commercial(db: Session):
         return None
 
     choices = [(f"{commercial.id} - {commercial.complete_name}", commercial.id) for commercial in commercials]
+    choices.insert(0, ("Retour en arrière", None))
+
     choice = inquirer.select(
         message="Sélectionnez un commercial :",
         choices=[choice for choice, _ in choices],
     ).execute()
 
+    if choice == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return None
+
     commercial_id = next((id for text, id in choices if text == choice), None)
     return commercial_id
 
 def prompt_create_client(db: Session):
+    """
+    Demande à l'utilisateur de saisir les informations pour créer un nouveau client.
+    """
+
+    start_creation = inquirer.select(
+        message="Souhaitez-vous créer un nouveau client ?",
+        choices=["Oui", "Retour en arrière"]
+    ).execute()
+
+    if start_creation == "Retour en arrière":
+        console.print("\n[blue]Création annulée, retour en arrière.[/blue]\n")
+        return
+
     full_name = inquirer.text(message="Entrez le nom complet du client:").execute()
     email = inquirer.text(message="Entrez l'email du client:").execute()
     phone_number = inquirer.text(message="Entrez le numéro de téléphone:").execute()
@@ -77,22 +106,81 @@ def prompt_create_client(db: Session):
         console.print(f"[red]{str(e)}[/red]")
 
 def prompt_update_client(db: Session):
-    client_id = int(inquirer.text(message="Entrez l'ID du client à modifier:").execute())
+    """
+    Demande à l'utilisateur de sélectionner un client et de mettre à jour ses informations.
+    """
+    clients = get_all_clients(db)
+    if not clients:
+        console.print("\n[blue]Aucun client disponible pour mise à jour.[/blue]\n")
+        return
+
+    client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
+    client_choices.insert(0, ("Retour en arrière", None))
+
+    selected_client_text = inquirer.select(
+        message="Sélectionnez un client à modifier :",
+        choices=[choice for choice, _ in client_choices],
+    ).execute()
+
+    if selected_client_text == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
+
+    client_id = next((id for text, id in client_choices if text == selected_client_text), None)
+
     full_name = inquirer.text(message="Entrez le nouveau nom complet (laissez vide pour ne pas changer):").execute()
     email = inquirer.text(message="Entrez le nouvel email (laissez vide pour ne pas changer):").execute()
-    phone_number = inquirer.text(message="Entrez le nouveau numéro de téléphone (laissez vide pour ne pas changer):").execute()
+    phone_number = inquirer.text(
+        message="Entrez le nouveau numéro de téléphone (laissez vide pour ne pas changer):"
+    ).execute()
+
     company_name = inquirer.text(message="Entrez le nouveau nom de l'entreprise (laissez vide pour ne pas changer):").execute()
     change_commercial = inquirer.confirm(message="Voulez-vous changer de commercial ?", default=False).execute()
+
     commercial_contact_id = select_commercial(db) if change_commercial else None
 
-    updated_client = update_client(db, client_id, full_name or None, email or None, phone_number or None, company_name or None, commercial_contact_id)
+    updated_client = update_client(
+        db,
+        client_id,
+        full_name or None,
+        email or None,
+        phone_number or None,
+        company_name or None,
+        commercial_contact_id,
+    )
     if updated_client:
-        console.print(f"[blue]Client mis à jour :[/blue] {updated_client.id}, Nom: {updated_client.full_name}, Email: {updated_client.email}")
+        console.print(
+            f"[blue]Client mis à jour :[/blue] {updated_client.id}, Nom: {updated_client.full_name}, Email: {updated_client.email}"
+        )
     else:
         console.print("[blue]Client non trouvé.[/blue]")
 
+
+
 def prompt_delete_client(db: Session):
-    client_id = int(inquirer.text(message="Entrez l'ID du client à supprimer:").execute())
+    """
+    Demande à l'utilisateur de sélectionner un client à supprimer.
+    """
+
+    clients = get_all_clients(db)
+    if not clients:
+        console.print("\n[red]Aucun client disponible pour suppression.[/red]\n")
+        return
+
+    client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
+    client_choices.insert(0, ("Retour en arrière", None))
+
+    selected_client_text = inquirer.select(
+        message="Sélectionnez un client à supprimer :",
+        choices=[choice for choice, _ in client_choices],
+    ).execute()
+
+    if selected_client_text == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
+
+    client_id = next((id for text, id in client_choices if text == selected_client_text), None)
+
     client = delete_client(db, client_id)
     if client:
         console.print(f"[blue]Client supprimé :[/blue] {client.id}, Nom: {client.full_name}")

@@ -5,6 +5,7 @@ from rich.console import Console
 from view.user_view import user_menu
 from view.client_view import client_menu
 from view.contract_view import contract_menu
+from view.event_view import event_menu
 
 
 console = Console()
@@ -30,13 +31,13 @@ def main_menu():
             ).execute()
 
             if choice == "Utilisateur":
-                user_menu(db)
+                user_menu()
             elif choice == "Contrat":
                 contract_menu(db)
             elif choice == "Événement":
-                console.print("[cyan]Menu Événement (en développement)[/cyan]")
+                event_menu(db)
             elif choice == "Client":
-                client_menu(db)
+                client_menu()
             elif choice == "Quitter":
                 console.print("[red]Fermeture du programme...[/red]")
                 break
