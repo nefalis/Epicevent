@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from model.contract_model import Contract
-from model.user_model import User
+from model.user_model import User, Department
 from datetime import datetime
+from authentication.auth_service import get_current_user_role, can_perform_action
 
 
 def get_all_contracts(db: Session):
@@ -12,10 +13,16 @@ def get_all_contracts(db: Session):
     return contracts
 
 
-def create_contract(db: Session, client_id: int, commercial_contact_id: int, total_price: float, remaining_price: float, statut: str):
+def create_contract(db: Session, user_id: int, client_id: int, commercial_contact_id: int, total_price: float, remaining_price: float, statut: str):
     """
     Fonction pour créer un nouveau contrat dans la base de données
     """
+
+    user_role = get_current_user_role(user_id, db)
+    
+    if not can_perform_action(user_role, "create_contract"):
+        raise PermissionError("Vous n'avez pas les droits nécessaires pour créer un contrat.")
+    
     new_contract = Contract(
     client_id=client_id,
     commercial_contact_id=commercial_contact_id,
@@ -30,10 +37,15 @@ def create_contract(db: Session, client_id: int, commercial_contact_id: int, tot
     db.refresh(new_contract)
     return new_contract
 
-def update_contract(db: Session, contract_id: int, **kwargs):
+def update_contract(db: Session,user_id: int, contract_id: int, **kwargs):
     """
     Met à jour un contrat existant avec les informations fournies.
     """
+    user_role = get_current_user_role(user_id, db)
+    
+    if not can_perform_action(user_role, "update_contract"):
+        raise PermissionError("Vous n'avez pas les droits nécessaires pour modifier un contrat.")
+    
     contract = db.query(Contract).filter(Contract.id == contract_id).first()
     if not contract:
         return None
@@ -47,10 +59,15 @@ def update_contract(db: Session, contract_id: int, **kwargs):
     return contract
 
 
-def delete_contract(db: Session, contract_id: int):
+def delete_contract(db: Session, user_id: int, contract_id: int):
     """
     Supprime un contrat de la base de données.
     """
+    user_role = get_current_user_role(user_id, db)
+    
+    if not can_perform_action(user_role, "delete_contract"):
+        raise PermissionError("Vous n'avez pas les droits nécessaires pour supprimer un contrat.")
+    
     contract = db.query(Contract).filter(Contract.id == contract_id).first()
     if not contract:
         return None
@@ -59,18 +76,13 @@ def delete_contract(db: Session, contract_id: int):
     db.commit()
     return contract
 
+
 def get_contract_by_id(db: Session, contract_id: int):
     """
     Récupère un contrat spécifique par son ID.
     """
     return db.query(Contract).filter(Contract.id == contract_id).first()
 
-def get_commercials(db: Session):
-    """
-    Récupère tous les utilisateurs ayant le rôle de commercial.
-    """
-    commercials = db.query(User).filter(User.role == "commercial").all()
-    return commercials
 
 def get_contracts_by_client_id(db: Session, client_id: int):
     """
