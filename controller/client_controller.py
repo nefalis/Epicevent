@@ -2,28 +2,25 @@ from sqlalchemy.orm import Session
 from model.client_model import Client
 from model.user_model import User
 from datetime import datetime
-from authentication.auth_service import get_current_user_role, can_perform_action
+from authentication.auth_utils import handle_errors, requires_permission
+from authentication.auth_token import get_user_from_token
 
 
-
-def get_all_clients(db: Session):
+@handle_errors
+def get_all_clients(db: Session, token: str):
     """
     Fonction pour récupérer tous les clients de la base de données.
     """
+    get_user_from_token(token, db)
     clients = db.query(Client).all()
-    return  clients
+    return clients
 
-
-def create_client(db: Session, user_id: int, full_name: str, email: str, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
+@handle_errors
+@requires_permission("create_client")
+def create_client(db: Session, user_id: int, token: str, full_name: str, email: str, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
     """
     Fonction pour créer un nouveau client.
     """
-    user_role = get_current_user_role(user_id, db)
-    print(f"Rôle de l'utilisateur debug : {user_role}")
-    
-    if not can_perform_action(user_role, "create_client"):
-        raise PermissionError("Vous n'avez pas les droits nécessaires pour créer un client.")
-    
     # Vérifie si le commercial existe dans la base de données
     commercial_contact = db.query(User).filter(User.id == commercial_contact_id).first() if commercial_contact_id else None
     if commercial_contact_id and not commercial_contact:
@@ -44,15 +41,12 @@ def create_client(db: Session, user_id: int, full_name: str, email: str, phone_n
     return new_client
 
 
-def update_client(db: Session, user_id: int, client_id: int, full_name: str = None, email: str = None, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
+@handle_errors
+@requires_permission("update_client")
+def update_client(db: Session, user_id: int, token: str, client_id: int, full_name: str = None, email: str = None, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
     """
     Fonction pour mettre à jour un client existant.
     """
-    user_role = get_current_user_role(user_id, db)
-    
-    if not can_perform_action(user_role, "update_client"):
-        raise PermissionError("Vous n'avez pas les droits nécessaires pour modifier un client.")
-
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         return None
@@ -74,26 +68,18 @@ def update_client(db: Session, user_id: int, client_id: int, full_name: str = No
     if commercial_contact_id is not None:
         client.commercial_contact_id = commercial_contact_id
 
-    try:
-        client.last_update = datetime.now()
-        db.commit()
-        db.refresh(client)
-        return client
-    except Exception as e:
-        db.rollback()
-        return None
+    client.last_update = datetime.now()
+    db.commit()
+    db.refresh(client)
+    return client
 
 
-def delete_client(db: Session, user_id: int, client_id: int):
+@handle_errors
+@requires_permission("delete_client")
+def delete_client(db: Session, user_id: int, client_id: int, token: str):
     """
     Fonction pour supprimer un client.
     """
-    user_role = get_current_user_role(user_id, db)
-    
-    if not can_perform_action(user_role, "delete_client"):
-        print(f"Debug: Permissions pour suppression : {can_perform_action(user_role, 'delete_client')}")
-        raise PermissionError("Vous n'avez pas les droits nécessaires pour supprimer un client.")
-    
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         return None
@@ -101,5 +87,3 @@ def delete_client(db: Session, user_id: int, client_id: int):
     db.delete(client)
     db.commit()
     return client
-
-

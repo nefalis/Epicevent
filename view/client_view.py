@@ -5,17 +5,18 @@ from sqlalchemy.orm import Session
 from controller.client_controller import get_all_clients, create_client, update_client, delete_client
 from config import SessionLocal
 from authentication.auth_service import can_perform_action, get_current_user_role
+from authentication.auth_token import get_user_from_token, load_token
 from controller.user_controller import get_commercials
 from view.validation import validate_email, validate_phone_number, validate_text
 
 console = Console()
 
-def display_clients(db: Session):
+def display_clients(db: Session, token: str):
     """
     Affiche la liste des clients.
     """
 
-    clients = get_all_clients(db)
+    clients = get_all_clients(db, token)
     if not clients:
         console.print("\n[blue]Aucun client trouvé.[/blue]\n")
         return
@@ -51,11 +52,11 @@ def display_clients(db: Session):
     console.print("\n")
 
 
-def select_commercial(db: Session):
+def select_commercial(db: Session, token: str):
     """
     Fonction pour sélectionner un commercial dans une liste des commerciaux disponibles.
     """
-    commercials = get_commercials(db)
+    commercials = get_commercials(db, token)
     if not commercials:
         console.print("\n[[blue]Aucun commercial disponible.[/blue]\n[")
         return None
@@ -76,12 +77,12 @@ def select_commercial(db: Session):
     return commercial_id
 
 
-def prompt_create_client(db: Session, user_id: int):
+def prompt_create_client(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de saisir les informations pour créer un nouveau client.
     """
     
-    user_role = get_current_user_role(user_id, db)
+    user_role = get_current_user_role(user_id, db, token)
 
     if not can_perform_action(user_role, "create_client"):
         console.print("\n[red]Vous n'avez pas les droits nécessaires pour créer un client view.[/red]\n")
@@ -119,12 +120,13 @@ def prompt_create_client(db: Session, user_id: int):
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
-    commercial_contact_id = select_commercial(db)
+    commercial_contact_id = select_commercial(db, token)
 
     try:
         new_client = create_client(
             db,
             user_id=user_id,
+            token=token,
             full_name=full_name,
             email=email,
             phone_number=phone_number if phone_number else None,
@@ -135,11 +137,11 @@ def prompt_create_client(db: Session, user_id: int):
     except ValueError as e:
         console.print(f"\n[red]{str(e)}[/red]\n")
 
-def prompt_update_client(db: Session, user_id: int):
+def prompt_update_client(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un client et de mettre à jour ses informations.
     """
-    clients = get_all_clients(db)
+    clients = get_all_clients(db, token)
     if not clients:
         console.print("\n[blue]Aucun client disponible.[/blue]\n")
         return
@@ -185,7 +187,7 @@ def prompt_update_client(db: Session, user_id: int):
 
     change_commercial = inquirer.confirm(message="Voulez-vous changer de commercial ?", default=False).execute()
 
-    commercial_contact_id = select_commercial(db) if change_commercial else None
+    commercial_contact_id = select_commercial(db, token) if change_commercial else None
 
     updated_client = update_client(
         db,
@@ -206,12 +208,12 @@ def prompt_update_client(db: Session, user_id: int):
 
 
 
-def prompt_delete_client(db: Session, user_id: int):
+def prompt_delete_client(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un client à supprimer.
     """
 
-    clients = get_all_clients(db)
+    clients = get_all_clients(db, token)
     if not clients:
         console.print("\n[red]Aucun client disponible pour suppression.[/red]\n")
         return
@@ -230,16 +232,23 @@ def prompt_delete_client(db: Session, user_id: int):
 
     client_id = next((id for text, id in client_choices if text == selected_client_text), None)
 
-    client = delete_client(db, user_id, client_id)
+    client = delete_client(db, user_id, client_id, token)
     if client:
         console.print(f"\n[blue]Client supprimé :[/blue] {client.id}, Nom: {client.full_name}\n")
     else:
         console.print("\n[blue]Client non trouvé.[/blue]\n")
 
-def client_menu(current_user_role, user_id):
+def client_menu(current_user_role, user_id, token):
     db: Session = SessionLocal()
 
     try:
+        # Vérifier que le token est valide et obtenir l'utilisateur
+        token = load_token()
+        user = get_user_from_token(token, db)
+        if not user:
+            console.print("\n[red]Token invalide ou expiré. Veuillez vous reconnecter.[/red]\n")
+            return
+        
         while True:
             menu_options = []
             if can_perform_action(current_user_role, "get_all_clients"):
@@ -259,13 +268,13 @@ def client_menu(current_user_role, user_id):
             ).execute()
     
             if choice == "Afficher tous les clients":
-                display_clients(db)
+                display_clients(db, token)
             elif choice == "Créer un nouveau client":
-                prompt_create_client(db, user_id)
+                prompt_create_client(db, user.id, token)
             elif choice == "Modifier un client":
-                prompt_update_client(db, user_id)
+                prompt_update_client(db, user.id, token)
             elif choice == "Supprimer un client":
-                prompt_delete_client(db, user_id)
+                prompt_delete_client(db, user.id, token)
             elif choice == "Retour au menu principal":
                 break
     finally:

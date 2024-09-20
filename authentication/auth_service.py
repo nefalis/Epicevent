@@ -1,32 +1,34 @@
+import os
+from typing import Optional
+from datetime import timedelta
 from sqlalchemy.orm import Session
-from authentication.auth import login, logout
+from authentication.auth import logout
 from authentication.auth_controller import authenticate_user
 from model.user_model import User
+from authentication.auth_token import create_jwt_token, save_token
+from config import SECRET_KEY_TOKEN, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
-
-
-
-
-
-def login_user(db: Session, employee_number: str, password: str):
+def login_user(db: Session, employee_number: str, password: str) -> Optional[str]:
     """
     Service pour authentifier et connecter un utilisateur.
     """
     user = authenticate_user(db, employee_number, password)
     if user:
-        login(user)
-    return user
+        token = create_jwt_token(user.id, SECRET_KEY_TOKEN, ALGORITHM, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        save_token(token)
+        return token
+    return None
 
 
 def logout_user():
     """
-    Service pour gérer la déconnexion.
+    Service pour gérer la déconnexion. Supprime le jeton local.
     """
     logout()
 
 
-def get_current_user_role(user_id: int, db: Session) -> str:
+def get_current_user_role(user_id: int, db: Session, token: str) -> str:
     """
     Obtient le rôle de l'utilisateur actuellement connecté en utilisant son ID.
     """
@@ -51,7 +53,7 @@ def can_perform_action(user_department: str, action: str) -> bool:
     Vérifie si le rôle de l'utilisateur autorise l'action demandée.
     """
     permissions = {
-        "admin": {
+        "manager": {
             "get_all_clients": True,
             "create_client": True,
             "update_client": True,
@@ -133,5 +135,4 @@ def can_perform_action(user_department: str, action: str) -> bool:
 
     result = permissions.get(user_department, permissions["default"]).get(action, False)
     return result
-
 

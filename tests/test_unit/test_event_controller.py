@@ -31,17 +31,17 @@ def test_create_event():
             
             # Données de test
             event_data = {
-                "event_name": "Test Event",
+                "event_name": "Test Event1",
                 "contract_id": 1,
                 "client_id": 2,
-                "client_name": "Test Client",
-                "client_contact": "Test Contact",
+                "client_name": "Test Client1",
+                "client_contact": "Test Contact1",
                 "date_start": datetime(2024, 9, 15, 10, 0),
                 "date_end": datetime(2024, 9, 15, 12, 0),
                 "support_contact_id": 5,
-                "location": "Test Location",
+                "location": "Test Location1",
                 "attendees": 50,
-                "notes": "Test Notes"
+                "notes": "Test Notes1"
             }
 
             # Appel de la fonction à tester

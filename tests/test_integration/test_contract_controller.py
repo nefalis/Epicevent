@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model.contract_model import Contract, Client
 from model.user_model import User, Department
-from authentication.auth_service import can_perform_action, get_current_user_role
 from controller.contract_controller import create_contract
 from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base

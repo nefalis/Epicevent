@@ -11,7 +11,7 @@ from view.validation import validate_email, validate_employee_number, validate_p
 
 console = Console()
 
-def get_depatment_color(department_name):
+def get_department_color(department_name):
     """
     Retourne une couleur spécifique pour chaque rôle d'utilisateur.
     """
@@ -23,13 +23,13 @@ def get_depatment_color(department_name):
     return role_colors.get(department_name, "white")
 
 
-def display_users(db: Session):
+def display_users(db: Session, token: str):
     """
     Fonction pour afficher tous les utilisateurs.
     """
-    users = get_all_users(db)
-    table = Table(title="Liste des Utilisateurs", border_style="cyan", title_style="bold yellow",
-        show_footer=True)
+    users = get_all_users(db, token)
+    console.print("\n")
+    table = Table(title="Liste des Utilisateurs", border_style="cyan", title_style="cyan")
 
     table.add_column("ID", justify="right", style="cyan")
     table.add_column("Numéro Employé", style="blue")
@@ -40,7 +40,7 @@ def display_users(db: Session):
 
     for user in users:
         department_name = user.department.name if user.department else "Inconnu"
-        department_color = get_depatment_color(department_name) if user.department else "white"
+        department_color = get_department_color(department_name) if user.department else "white"
         table.add_row(
             f"[{department_color }]{user.id}[/{department_color }]",
             f"[{department_color }]{user.employee_number}[/{department_color }]",
@@ -54,7 +54,7 @@ def display_users(db: Session):
     console.print("\n")
 
 
-def prompt_create_user(db: Session):
+def prompt_create_user(db: Session, user_id: int, token: str):
     """
     Fonction pour demander les informations de l'utilisateur pour la création.
     """
@@ -99,17 +99,19 @@ def prompt_create_user(db: Session):
 
     new_user = create_user(
         db,
+        user_id=user_id,
         employee_number=employee_number,
         complete_name=complete_name,
         email=email,
         password=password,
-        department_name=department_name
+        department_name=department_name,
+        token=token
     )
 
     console.print(f"\n [green]Nouvel utilisateur créé :[/green] Nom: {new_user.complete_name}, Numéro d'employé: {new_user.employee_number}, Email: {new_user.email}, Département: {department_name} \n")
 
 
-def prompt_update_user(db: Session):
+def prompt_update_user(db: Session, user_id: int, token: str):
     """
     Fonction pour demander les informations pour mettre à jour un utilisateur avec possibilité de retour en arrière.
     """
@@ -124,7 +126,7 @@ def prompt_update_user(db: Session):
         return
 
     # Récupérer tous les utilisateurs
-    users = get_all_users(db)
+    users = get_all_users(db, token)
     if not users:
         console.print("\n[red]Aucun utilisateur trouvé.[/red]\n")
         return
@@ -161,18 +163,17 @@ def prompt_update_user(db: Session):
 
     department_name = None if department_name == "Ne pas changer" else department_name
 
-    updated_user = update_user(db, user_id, complete_name, email, password, department_name)
+    updated_user = update_user(db, user_id, token, complete_name, email, password, department_name)
     if updated_user:
         console.print(f"\n [green] Utilisateur modifié : Nom: {updated_user.complete_name}, Numéro d'employé: {updated_user.employee_number}, Email: {updated_user.email} [/green]\n")
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
 
-def prompt_delete_user(db: Session):
+def prompt_delete_user(db: Session, token: str):
     """
     Fonction pour demander la suppression d'un utilisateur avec possibilité de retour en arrière.
     """
-
     start_deletion = inquirer.select(
         message="Souhaitez-vous supprimer un utilisateur ?",
         choices=["Oui", "Retour en arrière"]
@@ -183,29 +184,46 @@ def prompt_delete_user(db: Session):
         return
     
     # Récupérer tous les utilisateurs
-    users = get_all_users(db)
+    users = get_all_users(db, token)
     if not users:
         console.print("\n[red]Aucun utilisateur trouvé.[/red]\n")
         return
     
     # Créer une liste de choix avec les noms et IDs des utilisateurs
     user_choices = [f"{user.complete_name} (ID: {user.id})" for user in users]
+    user_choices.insert(0, "Retour en arrière")
     selected_user = inquirer.select(
         message="Sélectionnez l'utilisateur à supprimer :",
         choices=user_choices
     ).execute()
 
+    if selected_user == "Retour en arrière":
+        console.print("\n[blue]Suppression annulée, retour au menu précédent.[/blue]\n")
+        return
+
     # Extraire l'ID de l'utilisateur sélectionné
     user_id = int(selected_user.split("(ID: ")[1].split(")")[0])
 
-    user = delete_user(db, user_id)
+    
+    # Demander confirmation avant de supprimer
+    confirmation = inquirer.confirm(
+        message=f"Êtes-vous sûr de vouloir supprimer l'utilisateur {selected_user} ?",
+        default=False
+    ).execute()
+
+    if not confirmation:
+        console.print("\n[blue]Suppression annulée, utilisateur non supprimé.[/blue]\n")
+        return
+    
+    # Supprimer l'utilisateur après confirmation
+    user = delete_user(db, user_id, token=token)
     if user:
         console.print(f"\n [green]Utilisateur supprimé :[/green] ID: {user.id}, Nom: {user.complete_name} \n")
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
 
-def user_menu(current_user_role):
+def user_menu(current_user_role, user_id, token):
     """
     Menu principal pour la gestion des utilisateurs.
     """
@@ -231,15 +249,22 @@ def user_menu(current_user_role):
                 choices=menu_options
             ).execute()
 
-            if choice == "Afficher tous les utilisateurs":
-                display_users(db)
-            elif choice == "Créer un nouvel utilisateur":
-                prompt_create_user(db)
-            elif choice == "Modifier un utilisateur":
-                prompt_update_user(db)
-            elif choice == "Supprimer un utilisateur":
-                prompt_delete_user(db)
-            elif choice == "Retour au menu principal":
+            try:
+                if choice == "Afficher tous les utilisateurs":
+                    display_users(db, token)
+                elif choice == "Créer un nouvel utilisateur":
+                    prompt_create_user(db, user_id, token)
+                elif choice == "Modifier un utilisateur":
+                    prompt_update_user(db, user_id, token)
+                elif choice == "Supprimer un utilisateur":
+                    prompt_delete_user(db, token)
+                elif choice == "Retour au menu principal":
+                    break
+            except PermissionError as e:
+                console.print(f"[red]{str(e)}[/red]")
                 break
+            except Exception as e:
+                console.print(f"[red]Erreur: {str(e)}[/red]")
+
     finally:
         db.close()

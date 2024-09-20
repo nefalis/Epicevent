@@ -15,16 +15,17 @@ from controller.client_controller import get_all_clients
 from controller.contract_controller import get_contracts_by_client_id
 from controller.user_controller import get_users_by_role
 from authentication.auth_service import can_perform_action
+from authentication.auth_token import get_user_from_token, load_token
 from view.validation import validate_digits, validate_text
 
 
 console = Console()
 
-def display_events(db: Session):
+def display_events(db: Session, token: str):
     """
     Affiche tous les événements.
     """
-    events = get_all_events(db)
+    events = get_all_events(db, token)
     if not events:
         console.print("\n[blue]Aucun événement trouvé.[/blue]\n")
         return
@@ -62,11 +63,11 @@ def display_events(db: Session):
     console.print("\n")
 
 
-def prompt_create_event(db: Session, user_id: int):
+def prompt_create_event(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de saisir les informations pour créer un nouvel événement.
     """
-    clients = get_all_clients(db)
+    clients = get_all_clients(db, token)
     supports = get_users_by_role(db, role='support')
 
     if not clients:
@@ -172,6 +173,7 @@ def prompt_create_event(db: Session, user_id: int):
     create_event(
         db,
         user_id=user_id,
+        token=token,
         event_name=event_name,
         contract_id=selected_contract_id,
         client_id=selected_client_id,
@@ -187,11 +189,11 @@ def prompt_create_event(db: Session, user_id: int):
     console.print(f"\n [blue]Événement créé avec succès ![/blue] \n")
 
 
-def prompt_update_event(db: Session, user_id: int):
+def prompt_update_event(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un événement à mettre à jour et les modifications à apporter.
     """
-    events = get_all_events(db)
+    events = get_all_events(db, token)
     if not events:
         console.print("\n[blue]Aucun événement disponible pour mise à jour.[/blue]\n")
         return
@@ -263,6 +265,7 @@ def prompt_update_event(db: Session, user_id: int):
     update_event(
         db,
         user_id,
+        token=token,
         event_id=event_id,
         event_name=event_name,
         location=location,
@@ -274,11 +277,11 @@ def prompt_update_event(db: Session, user_id: int):
     console.print(f"\n [blue]Événement mis à jour avec succès ![/blue] \n")
 
 
-def prompt_delete_event(db: Session, user_id: int):
+def prompt_delete_event(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un événement à supprimer.
     """
-    events = get_all_events(db)
+    events = get_all_events(db, token)
     if not events:
         console.print("\n[blue]Aucun événement disponible pour suppression.[/blue]\n")
         return
@@ -301,13 +304,18 @@ def prompt_delete_event(db: Session, user_id: int):
     console.print(f"\n [blue]Événement supprimé avec succès ![/blue] \n")
 
 
-def event_menu(current_user_role, user_id):
+def event_menu(current_user_role, user_id, token):
     """
     Menu principal pour la gestion des événements.
     """
     db: Session = SessionLocal()
 
     try:
+        token = load_token()
+        user = get_user_from_token(token, db)
+        if not user:
+            console.print("\n[red]Token invalide ou expiré. Veuillez vous reconnecter.[/red]\n")
+            return
         while True:
             # Obtenir les options de menu en fonction des permissions
             menu_options = []
@@ -328,13 +336,13 @@ def event_menu(current_user_role, user_id):
             ).execute()
 
             if choice == "Lister les événements":
-                display_events(db)
+                display_events(db, token)
             elif choice == "Ajouter un événement":
-                prompt_create_event(db, user_id)
+                prompt_create_event(db, user_id, token)
             elif choice == "Modifier un événement":
-                prompt_update_event(db, user_id)
+                prompt_update_event(db, user_id, token)
             elif choice == "Supprimer un événement":
-                prompt_delete_event(db, user_id)
+                prompt_delete_event(db, user_id, token)
             elif choice == "Retour au menu principal":
                 break
     finally:

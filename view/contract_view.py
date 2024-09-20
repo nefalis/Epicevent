@@ -51,7 +51,7 @@ def display_contracts(db: Session):
     console.print("\n")
 
 
-def prompt_create_contract(db: Session, user_id: int):
+def prompt_create_contract(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de saisir les informations pour créer un nouveau contrat.
     """
@@ -115,6 +115,7 @@ def prompt_create_contract(db: Session, user_id: int):
     create_contract(
         db,
         user_id=user_id,
+        token=token,
         client_id=client_id,
         commercial_contact_id=commercial_contact_id,
         total_price=total_price,
@@ -124,7 +125,7 @@ def prompt_create_contract(db: Session, user_id: int):
     console.print("\n[blue]Contrat créé avec succès ![/blue]\n")
 
 
-def prompt_update_contract(db: Session, user_id: int):
+def prompt_update_contract(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un contrat à mettre à jour et les modifications à apporter.
     """
@@ -176,6 +177,7 @@ def prompt_update_contract(db: Session, user_id: int):
     update_contract(
         db,
         user_id=user_id,
+        token=token,
         contract_id=contract_id,
         total_price=total_price,
         remaining_price=remaining_price,
@@ -184,7 +186,7 @@ def prompt_update_contract(db: Session, user_id: int):
     console.print("\n[blue]Contrat mis à jour avec succès ![/blue]\n")
 
 
-def prompt_delete_contract(db: Session, user_id: int):
+def prompt_delete_contract(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un contrat à supprimer.
     """
@@ -208,11 +210,11 @@ def prompt_delete_contract(db: Session, user_id: int):
 
     contract_id = next((id for text, id in contract_choices if text == selected_contract_text), None)
 
-    delete_contract(db, user_id, contract_id)
+    delete_contract(db, user_id, token, contract_id)
     console.print("\n[green]Contrat supprimé avec succès ![/green]\n")
 
 
-def contract_menu(current_user_role, user_id):
+def contract_menu(current_user_role, user_id, token):
     """
     Menu principal pour la gestion des contrats.
     """
@@ -241,11 +243,11 @@ def contract_menu(current_user_role, user_id):
             if choice == "Lister les contrats":
                 display_contracts(db)
             elif choice == "Ajouter un contrat":
-                prompt_create_contract(db, user_id)
+                prompt_create_contract(db, user_id, token)
             elif choice == "Modifier un contrat":
-                prompt_update_contract(db, user_id)
+                prompt_update_contract(db, user_id, token)
             elif choice == "Supprimer un contrat":
-                prompt_delete_contract(db, user_id)
+                prompt_delete_contract(db, user_id, token)
             elif choice == "Retour au menu principal":
                 break
     finally:
