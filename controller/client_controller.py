@@ -15,16 +15,25 @@ def get_all_clients(db: Session, token: str):
     clients = db.query(Client).all()
     return clients
 
+
 @handle_errors
 @requires_permission("create_client")
-def create_client(db: Session, user_id: int, token: str, full_name: str, email: str, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
+def create_client(
+    db: Session, user_id: int, token: str, full_name: str, email: str,
+    phone_number: str = None, company_name: str = None,
+    commercial_contact_id: int = None
+):
     """
     Fonction pour créer un nouveau client.
     """
     # Vérifie si le commercial existe dans la base de données
-    commercial_contact = db.query(User).filter(User.id == commercial_contact_id).first() if commercial_contact_id else None
+    commercial_contact = db.query(User).filter(
+        User.id == commercial_contact_id
+        ).first() if commercial_contact_id else None
     if commercial_contact_id and not commercial_contact:
-        raise ValueError(f"Aucun commercial trouvé avec l'ID {commercial_contact_id}.")
+        raise ValueError(
+            f"Aucun commercial trouvé avec l'ID {commercial_contact_id}."
+            )
 
     new_client = Client(
         full_name=full_name,
@@ -43,7 +52,11 @@ def create_client(db: Session, user_id: int, token: str, full_name: str, email: 
 
 @handle_errors
 @requires_permission("update_client")
-def update_client(db: Session, user_id: int, token: str, client_id: int, full_name: str = None, email: str = None, phone_number: str = None, company_name: str = None, commercial_contact_id: int = None):
+def update_client(
+    db: Session, user_id: int, token: str, client_id: int,
+    full_name: str = None, email: str = None, phone_number: str = None,
+    company_name: str = None, commercial_contact_id: int = None
+):
     """
     Fonction pour mettre à jour un client existant.
     """
@@ -53,9 +66,13 @@ def update_client(db: Session, user_id: int, token: str, client_id: int, full_na
 
     # Vérifie si le commercial existe dans la base de données
     if commercial_contact_id:
-        commercial_contact = db.query(User).filter(User.id == commercial_contact_id).first()
+        commercial_contact = db.query(User).filter(
+            User.id == commercial_contact_id
+            ).first()
         if not commercial_contact:
-            raise ValueError(f"Aucun commercial trouvé avec l'ID {commercial_contact_id}.")
+            raise ValueError(
+                f"Aucun commercial trouvé avec l'ID {commercial_contact_id}."
+                )
 
     if full_name is not None:
         client.full_name = full_name
@@ -76,7 +93,7 @@ def update_client(db: Session, user_id: int, token: str, client_id: int, full_na
 
 @handle_errors
 @requires_permission("delete_client")
-def delete_client(db: Session, user_id: int, client_id: int, token: str):
+def delete_client(db: Session, user_id: int, token: str, client_id: int, ):
     """
     Fonction pour supprimer un client.
     """

@@ -7,8 +7,9 @@ from model.user_model import User
 from config import SECRET_KEY_TOKEN, ALGORITHM, TOKEN_FILE
 
 
-
-def create_jwt_token(user_id: int, secret_key: str, algorithm: str, expires_delta: timedelta) -> str:
+def create_jwt_token(
+        user_id: int, secret_key: str, algorithm: str, expires_delta: timedelta
+        ) -> str:
     """
     Crée un jeton JWT pour l'utilisateur.
     """
@@ -16,6 +17,7 @@ def create_jwt_token(user_id: int, secret_key: str, algorithm: str, expires_delt
     to_encode = {"exp": expiration, "sub": user_id}
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encoded_jwt
+
 
 def save_token(token: str):
     with open(TOKEN_FILE, "w") as file:
@@ -29,7 +31,9 @@ def load_token() -> Optional[str]:
             if isinstance(token, str):
                 return token
             else:
-                print("debug load token l60 Le jeton n'est pas une chaîne valide")
+                print(
+                "debug load token l60 Le jeton n'est pas une chaîne valide"
+                )
     return None
 
 
@@ -46,12 +50,12 @@ def verify_jwt_token(token: str, secret_key: str, algorithm: str):
         # Décoder le token
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
         return payload["sub"]
-    
+
     except jwt.ExpiredSignatureError:
         raise PermissionError("Le jeton a expiré.")
     except jwt.InvalidTokenError:
         raise PermissionError("Erreur lors de la vérification du jeton.")
-    
+
 
 def get_user_from_token(token: str, db: Session):
     """
@@ -59,10 +63,10 @@ def get_user_from_token(token: str, db: Session):
     """
     try:
         user_id = verify_jwt_token(token, SECRET_KEY_TOKEN, ALGORITHM)
-        
+
         if not user_id:
             raise PermissionError("ID utilisateur non trouvé dans le jeton.")
-        
+
         user = db.query(User).filter(User.id == user_id).first()
         if user is None:
             raise PermissionError("Utilisateur introuvable.")
@@ -70,7 +74,9 @@ def get_user_from_token(token: str, db: Session):
     except PermissionError as e:
         raise e
     except Exception as e:
-        raise PermissionError(f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
+        raise PermissionError(
+            f"Erreur lors de la récupération de l'utilisateur: {str(e)}"
+            )
 
 
 def check_token_expiry(token: str) -> bool:

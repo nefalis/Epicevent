@@ -13,13 +13,10 @@ class Client(Base):
     company_name = Column(String(255), nullable=True)
     creation_date = Column(DateTime, nullable=False)
     last_update = Column(DateTime, nullable=False)
-    commercial_contact_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    
+    commercial_contact_id = Column(
+        Integer, ForeignKey('users.id'), nullable=True
+        )
+
     contracts = relationship("Contract", back_populates="client")
     events = relationship("Event", back_populates="client")
     commercial_contact = relationship("User", back_populates="clients")
-
-
-from model.user_model import User
-from model.contract_model import Contract
-from model.event_model import Event

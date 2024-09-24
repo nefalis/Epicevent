@@ -22,7 +22,3 @@ class Event(Base):
     client = relationship("Client", back_populates="events")
     contract = relationship("Contract", back_populates="events")
     support_contact = relationship("User", back_populates="events_as_support")
-
-from model.user_model import User
-from model.client_model import Client
-from model.contract_model import Contract

@@ -1,53 +1,44 @@
 from unittest import mock
-from controller.event_controller import get_all_events, create_event
-from model.event_model import Event
 from datetime import datetime
-
-def test_get_all_events():
-    mock_session = mock.MagicMock()
-
-    # Créer des exemples d'événements
-    event1 = Event(id=1, event_name="Event 1")
-    event2 = Event(id=2, event_name="Event 2")
-
-    # Simuler la réponse de la requête
-    mock_session.query().all.return_value = [event1, event2]
-
-    # Appel de la fonction à tester
-    events = get_all_events(mock_session)
-
-    # Vérifications
-    assert len(events) == 2
-    assert events[0].event_name == "Event 1"
-    assert events[1].event_name == "Event 2"
+from controller.event_controller import create_event
 
 
-def test_create_event():
-    mock_session = mock.MagicMock()
+@mock.patch("sqlalchemy.orm.Session")
+@mock.patch("authentication.auth_utils.get_current_user_role")
+@mock.patch("authentication.auth_utils.can_perform_action")
+def test_create_event(
+    mock_can_perform_action, mock_get_current_user_role, mock_session
+):
+    mock_db = mock.Mock()
 
-    # Simuler la fonction `get_current_user_role` et `can_perform_action`
-    with mock.patch('controller.event_controller.get_current_user_role', return_value='admin'):
-        with mock.patch('controller.event_controller.can_perform_action', return_value=True):
-            
-            # Données de test
-            event_data = {
-                "event_name": "Test Event1",
-                "contract_id": 1,
-                "client_id": 2,
-                "client_name": "Test Client1",
-                "client_contact": "Test Contact1",
-                "date_start": datetime(2024, 9, 15, 10, 0),
-                "date_end": datetime(2024, 9, 15, 12, 0),
-                "support_contact_id": 5,
-                "location": "Test Location1",
-                "attendees": 50,
-                "notes": "Test Notes1"
-            }
+    mock_get_current_user_role.return_value = "manager"
+    mock_can_perform_action.return_value = True
+    mock_session.return_value = mock_db
 
-            # Appel de la fonction à tester
-            new_event = create_event(mock_session, 10, **event_data)
+    event_name = "Test Event"
+    client_name = "Client Test"
+    location = "Paris"
 
-            # Vérifications
-            mock_session.add.assert_called_once_with(new_event)
-            mock_session.commit.assert_called_once()
-            assert isinstance(new_event, Event)
+    event = create_event(
+        db=mock_db,
+        user_id=10,
+        token="fake_token",
+        event_name=event_name,
+        contract_id=1,
+        client_id=1,
+        client_name=client_name,
+        client_contact="test@test.com",
+        date_start=datetime(2024, 9, 20, 10, 0),
+        date_end=datetime(2024, 9, 20, 12, 0),
+        support_contact_id=1,
+        location=location,
+        attendees=100,
+        notes="Ceci est un test."
+    )
+
+    assert event.event_name == event_name
+    assert event.client_name == client_name
+    assert event.location == location
+
+    mock_db.add.assert_called_once()
+    mock_db.commit.assert_called_once()

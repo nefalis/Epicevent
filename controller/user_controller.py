@@ -4,7 +4,7 @@ from model.user_model import User, Department
 from datetime import datetime
 from authentication.auth_token import get_user_from_token
 from authentication.auth_utils import handle_errors, requires_permission
-from authentication.auth_service import can_perform_action
+
 
 console = Console()
 
@@ -12,7 +12,8 @@ console = Console()
 @handle_errors
 def get_all_users(db: Session, token: str):
     """
-    Fonction pour récupérer et afficher tous les utilisateurs de la base de données
+    Fonction pour récupérer et afficher tous les
+    utilisateurs de la base de données
     """
     get_user_from_token(token, db)
     users = db.query(User).join(Department).filter(Department.name != "manager").all()
@@ -21,7 +22,10 @@ def get_all_users(db: Session, token: str):
 
 @handle_errors
 @requires_permission("create_user")
-def create_user(db: Session, user_id: int, token: str, employee_number: str, complete_name: str, email: str, password: str, department_name: str):
+def create_user(
+    db: Session, user_id: int, token: str, employee_number: str,
+    complete_name: str, email: str, password: str, department_name: str
+):
     """
     Fonction pour créer un nouvel utilisateur dans la base de données
     """
@@ -51,7 +55,10 @@ def create_user(db: Session, user_id: int, token: str, employee_number: str, com
 
 @handle_errors
 @requires_permission("update_user")
-def update_user(db: Session, user_id: int, token: str, complete_name: str = None, email: str = None, password: str = None, department_name: str = None):
+def update_user(
+    db: Session, user_id: int, token: str, complete_name: str = None,
+    email: str = None, password: str = None, department_name: str = None
+):
     """
     Fonction pour mettre à jour un utilisateur existant
     """
@@ -85,7 +92,7 @@ def delete_user(db: Session, user_id: int, token: str):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None
-    
+
     db.delete(user)
     db.commit()
     return user

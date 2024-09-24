@@ -1,54 +1,130 @@
 import pytest
+from unittest import mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from model.contract_model import Contract, Client
-from model.user_model import User, Department
-from controller.contract_controller import create_contract
-from datetime import datetime
-from sqlalchemy.ext.declarative import declarative_base
-
-# Utiliser une base en mémoire pour les tests
-DATABASE_URL = "sqlite:///:memory:"
-
-Base = declarative_base()
-
-# Configuration de la base de données pour les tests
-@pytest.fixture(scope="function")
-def db_session():
-    engine = create_engine(DATABASE_URL)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    # Créer toutes les tables nécessaires
-    Base.metadata.create_all(engine)
-
-    # Ajouter des données de test
-    yield session
-
-    # Supprimer toutes les tables après les tests
-    Base.metadata.drop_all(engine)
-    session.close()
-
-# Mock de la fonction d'authentification pour obtenir le rôle de l'utilisateur
-@pytest.fixture
-def mock_user_role(mocker):
-    mocker.patch('authentication.auth_service.get_current_user_role', return_value="admin")
-    mocker.patch('authentication.auth_service.can_perform_action', return_value=True)
-
-# Test d'intégration pour créer un contrat
-def test_create_contract(db_session, mock_user_role):
-    client = Client(id=1, full_name="Client Test")
-    db_session.add(client)
-    db_session.commit()
-
-    user_id = 1
-    new_contract = create_contract(
-        db_session, user_id=user_id, client_id=client.id, commercial_contact_id=1,
-        total_price=1000.0, remaining_price=500.0, statut="En cours"
+from model.contract_model import Base
+from controller.contract_controller import (
+    create_contract,
+    update_contract,
+    delete_contract,
+    get_contract_by_id
     )
 
-    # Vérifier que le contrat a été créé
-    assert new_contract.id is not None
-    assert new_contract.client_id == 1
-    assert new_contract.total_price == 1000.0
-    assert new_contract.statut == "En cours"
+
+@pytest.fixture(scope="module")
+def test_db():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=engine
+        )
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture(autouse=True)
+def mock_requires_permission():
+    with mock.patch(
+        "controller.contract_controller.requires_permission",
+        side_effect=lambda x: lambda f: f
+    ):
+        yield
+
+
+@mock.patch(
+        "authentication.auth_utils.requires_permission",
+        side_effect=lambda x: lambda f: f)
+@mock.patch(
+    "authentication.auth_utils.get_current_user_role",
+    return_value='manager'
+    )
+def test_create_contract(
+    mock_get_current_user_role, mock_requires_permission, test_db
+):
+    new_contract = create_contract(
+        db=test_db,
+        user_id=1,
+        token="fake_token",
+        client_id=123,
+        commercial_contact_id=456,
+        total_price=10000,
+        remaining_price=5000,
+        statut="en attente"
+    )
+
+    assert new_contract.client_id == 123
+    assert new_contract.commercial_contact_id == 456
+    assert new_contract.total_price == 10000
+    assert new_contract.remaining_price == 5000
+    assert new_contract.statut == "en attente"
+
+
+@mock.patch(
+        "authentication.auth_utils.requires_permission",
+        side_effect=lambda x: lambda f: f
+        )
+@mock.patch(
+    "authentication.auth_utils.get_current_user_role",
+    return_value='manager'
+    )
+def test_update_contract(
+    mock_get_current_user_role, mock_requires_permission, test_db
+):
+    new_contract = create_contract(
+        db=test_db,
+        user_id=1,
+        token="fake_token",
+        client_id=123,
+        commercial_contact_id=456,
+        total_price=10000,
+        remaining_price=5000,
+        statut="en attente"
+    )
+
+    updated_contract = update_contract(
+        db=test_db,
+        user_id=1,
+        token="fake_token",
+        contract_id=new_contract.id,
+        total_price=12000,
+        statut="signé"
+    )
+
+    assert updated_contract.total_price == 12000
+    assert updated_contract.statut == "signé"
+
+
+@mock.patch(
+        "authentication.auth_utils.requires_permission",
+        side_effect=lambda x: lambda f: f
+        )
+@mock.patch(
+    "authentication.auth_utils.get_current_user_role",
+    return_value='manager'
+    )
+def test_delete_contract(
+    mock_get_current_user_role, mock_requires_permission, test_db
+):
+    new_contract = create_contract(
+        db=test_db,
+        user_id=1,
+        token="fake_token",
+        client_id=123,
+        commercial_contact_id=456,
+        total_price=10000,
+        remaining_price=5000,
+        statut="signé"
+    )
+
+    deleted_contract = delete_contract(
+        db=test_db,
+        user_id=1,
+        token="fake_token",
+        contract_id=new_contract.id
+    )
+
+    assert deleted_contract is not None
+    assert get_contract_by_id(test_db, new_contract.id) is None

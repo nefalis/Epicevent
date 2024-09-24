@@ -1,65 +1,96 @@
 from unittest import mock
-from controller.user_controller import get_all_users, create_user, update_user
+from controller.user_controller import (
+    create_user,
+    update_user,
+    delete_user
+    )
 from model.user_model import User, Department
 
-def test_get_all_users():
-    mock_session = mock.MagicMock()
 
-    # Création d'exemples d'utilisateurs avec leurs départements
-    department_gestion = Department(id=1, name="gestion")
-    department_commercial = Department(id=2, name="commercial")
-    user1 = User(id=1, complete_name="John Doe", department=department_gestion)
-    user2 = User(id=2, complete_name="Jane Smith", department=department_commercial)
+@mock.patch("sqlalchemy.orm.Session")
+@mock.patch("authentication.auth_utils.get_current_user_role")
+@mock.patch(
+    "authentication.auth_utils.can_perform_action",
+    return_value=True
+    )
+def test_create_user(
+    mock_can_perform_action, mock_get_current_user_role, mock_session
+):
+    mock_db = mock.Mock()
+    mock_get_current_user_role.return_value = "manager"
 
-    # Simuler la réponse de la requête
-    mock_session.query().join().filter().all.return_value = [user1, user2]
+    mock_session.return_value = mock_db
 
-    # Exécution de la fonction à tester
-    users = get_all_users(mock_session)
+    department = Department(name='gestion', id=1)
+    mock_db.query.return_value.filter.return_value.first.return_value = department
 
-    # Vérification que la liste d'utilisateurs contient bien les deux utilisateurs simulés
-    assert len(users) == 2
-    assert users[0].complete_name == "John Doe"
-    assert users[1].complete_name == "Jane Smith"
+    user = create_user(
+        db=mock_db,
+        user_id=1,
+        token="fake_token",
+        employee_number="AB1234",
+        complete_name="Test User",
+        email="test@example.com",
+        password="Password1",
+        department_name="gestion"
+    )
 
+    assert isinstance(user, User)
+    assert user.complete_name == "Test User"
+    assert user.email == "test@example.com"
+    assert user.department_id == department.id
 
-def test_create_user():
-    mock_session = mock.MagicMock()
-
-    # Simuler le département dans la base de données
-    department_gestion = Department(id=1, name="gestion")
-    mock_session.query().filter().first.return_value = department_gestion
-
-    # Simuler la création de l'utilisateur
-    employee_number = "ma8466"
-    complete_name = "Bob Eponge"
-    email = "bob@example.com"
-    password = "Fr45451232d"
-    department_name = "gestion"
-
-    # Exécution de la fonction à tester
-    new_user = create_user(mock_session, employee_number, complete_name, email, password, department_name)
-
-    # Vérification que l'utilisateur est bien ajouté à la session
-    mock_session.add.assert_called_once_with(new_user)
-    # Vérification que les changements ont bien été commités
-    mock_session.commit.assert_called_once()
+    mock_db.add.assert_called_once()
+    mock_db.commit.assert_called_once()
 
 
-def test_update_user():
-    # Mock de la session SQLAlchemy
-    mock_session = mock.MagicMock()
+@mock.patch("sqlalchemy.orm.Session")
+@mock.patch("authentication.auth_utils.get_current_user_role")
+@mock.patch(
+    "authentication.auth_utils.can_perform_action", return_value=True
+    )
+def test_update_user(
+    mock_can_perform_action, mock_get_current_user_role, mock_session
+):
+    mock_db = mock.Mock()
+    mock_get_current_user_role.return_value = "manager"
+    mock_session.return_value = mock_db
 
-    # Simuler un utilisateur existant
-    user = User(id=1, complete_name="Boby Eponge", email="bobyeponge@example.com")
-    mock_session.query().filter().first.return_value = user
+    user = User(id=1, complete_name="Old Name", email="old@example.com")
+    mock_db.query.return_value.filter.return_value.first.return_value = user
 
-    # Exécution de la fonction à tester
-    updated_user = update_user(mock_session, 1, complete_name="Boby Eponge", email="bobyeponge@example.com")
+    updated_user = update_user(
+        db=mock_db,
+        user_id=1,
+        token="fake_token",
+        complete_name="New Name",
+        email="new@example.com",
+        password=None,
+        department_name=None
+    )
 
-    # Vérification que l'utilisateur est bien mis à jour
-    assert updated_user.complete_name == "Boby Eponge"
-    assert updated_user.email == "bobyeponge@example.com"
-    
-    # Vérification que les changements ont bien été commités
-    mock_session.commit.assert_called_once()
+    assert updated_user.complete_name == "New Name"
+    assert updated_user.email == "new@example.com"
+    mock_db.commit.assert_called_once()
+
+
+@mock.patch("sqlalchemy.orm.Session")
+@mock.patch("authentication.auth_utils.get_current_user_role")
+@mock.patch(
+    "authentication.auth_utils.can_perform_action", return_value=True
+    )
+def test_delete_user(
+    mock_can_perform_action, mock_get_current_user_role, mock_session
+):
+    mock_db = mock.Mock()
+    mock_get_current_user_role.return_value = "manager"
+    mock_session.return_value = mock_db
+
+    user = User(id=1, complete_name="Test User", email="test@example.com")
+    mock_db.query.return_value.filter.return_value.first.return_value = user
+
+    deleted_user = delete_user(db=mock_db, user_id=1, token="fake_token")
+
+    assert deleted_user.complete_name == "Test User"
+    mock_db.delete.assert_called_once_with(user)
+    mock_db.commit.assert_called_once()

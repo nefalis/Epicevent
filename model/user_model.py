@@ -12,13 +12,19 @@ class User(Base):
     complete_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    department_id = Column(Integer, ForeignKey('departments.id'), nullable=False)
+    department_id = Column(
+        Integer, ForeignKey('departments.id'), nullable=False
+        )
     creation_date = Column(DateTime, nullable=False)
 
     department = relationship("Department", back_populates="users")
     clients = relationship("Client", back_populates="commercial_contact")
-    contracts_as_commercial = relationship("Contract", back_populates="commercial_contact")
-    events_as_support = relationship("Event", back_populates="support_contact")
+    contracts_as_commercial = relationship(
+        "Contract", back_populates="commercial_contact"
+        )
+    events_as_support = relationship(
+        "Event", back_populates="support_contact"
+        )
 
     def set_password(self, raw_password):
         salt = bcrypt.gensalt()
@@ -26,7 +32,9 @@ class User(Base):
         self.password = hashed.decode('utf-8')
 
     def check_password(self, raw_password):
-        return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
+        return bcrypt.checkpw(
+            raw_password.encode('utf-8'), self.password.encode('utf-8')
+            )
 
 
 class Department(Base):
@@ -34,9 +42,4 @@ class Department(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
-    users = relationship("User", back_populates="department")   
-
-
-from model.client_model import Client
-from model.contract_model import Contract
-from model.event_model import Event
+    users = relationship("User", back_populates="department")

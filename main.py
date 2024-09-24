@@ -6,9 +6,17 @@ from view.user_view import user_menu
 from view.client_view import client_menu
 from view.contract_view import contract_menu
 from view.event_view import event_menu
-from authentication.auth_service import can_perform_action, get_current_user_department, login_user
+from authentication.auth_service import (
+    can_perform_action,
+    get_current_user_department,
+    login_user
+    )
 from authentication.auth_controller import authenticate_user
-from authentication.auth_token import load_token, delete_token, check_token_expiry
+from authentication.auth_token import (
+    load_token,
+    delete_token,
+    check_token_expiry
+    )
 from authentication.auth import login, logout
 import sentry_sdk
 
@@ -21,6 +29,7 @@ sentry_sdk.init(
 console = Console()
 current_user_department = None
 current_user_id = None
+
 
 def main_menu():
     """
@@ -44,26 +53,37 @@ def main_menu():
                 ).execute()
 
                 if choice == "Connexion":
-                    employee_number = inquirer.text(message="Numéro d'employé:").execute()
-                    password = inquirer.secret(message="Mot de passe:").execute()
+                    employee_number = inquirer.text(
+                        message="Numéro d'employé:"
+                        ).execute()
+                    password = inquirer.secret(
+                        message="Mot de passe:"
+                        ).execute()
 
                     user = authenticate_user(db, employee_number, password)
 
                     if user:
                         token = login_user(db, employee_number, password)
-                        
+
                         if token:
                             login(user)
                             token = load_token()
-                            current_user_department = get_current_user_department(user.id, db)
+                            current_user_department = get_current_user_department(
+                                user.id, db
+                                )
                             global current_user_id
                             current_user_id = user.id
-                            
-                            console.print(f"\n [blue]Connexion réussie! Bienvenue {user.complete_name}.[/blue]")
+
+                            console.print(
+                                f"\n [blue]Connexion réussie!"
+                                "Bienvenue {user.complete_name}.[/blue]"
+                                )
                         else:
                             console.print("[red]Erreur lors de la création du jeton.[/red]")
                     else:
-                        console.print("[red]Numéro d'employé ou mot de passe incorrect.[/red]")
+                        console.print(
+                            "[red]Numéro d'employé ou mot de passe incorrect.[/red]"
+                            )
 
                 elif choice == "Quitter":
                     console.print("[red]Fermeture du programme...[/red]")
@@ -72,7 +92,9 @@ def main_menu():
             else:
                 # Vérifier si le jeton est expiré
                 if token is None:
-                    console.print("[red]Aucun jeton trouvé. Vous allez être déconnecté.[/red]")
+                    console.print(
+                        "[red]Aucun jeton trouvé. Vous allez être déconnecté.[/red]"
+                        )
                     delete_token()
                     logout()
                     current_user_department = None
@@ -80,7 +102,9 @@ def main_menu():
                     continue
 
                 if not check_token_expiry(token):
-                    console.print("[red]Votre session a expiré. Vous allez être déconnecté.[/red]")
+                    console.print(
+                        "[red]Votre session a expiré. Vous allez être déconnecté.[/red]"
+                        )
                     delete_token()
                     logout()
                     current_user_department = None
@@ -89,13 +113,21 @@ def main_menu():
                     continue
 
                 menu_options = []
-                if can_perform_action(current_user_department, "get_all_users"):
+                if can_perform_action(
+                    current_user_department, "get_all_users"
+                ):
                     menu_options.append("Utilisateur")
-                if can_perform_action(current_user_department, "get_all_contracts"):
+                if can_perform_action(
+                    current_user_department, "get_all_contracts"
+                ):
                     menu_options.append("Contrat")
-                if can_perform_action(current_user_department, "get_all_events"):
+                if can_perform_action(
+                    current_user_department, "get_all_events"
+                ):
                     menu_options.append("Événement")
-                if can_perform_action(current_user_department, "get_all_clients"):
+                if can_perform_action(
+                    current_user_department, "get_all_clients"
+                ):
                     menu_options.append("Client")
 
                 menu_options.append("Déconnexion")
@@ -107,13 +139,21 @@ def main_menu():
                 ).execute()
 
                 try:
-                    if choice == "Utilisateur" and can_perform_action(current_user_department, "get_all_users"):
+                    if choice == "Utilisateur" and can_perform_action(
+                        current_user_department, "get_all_users"
+                    ):
                         user_menu(current_user_department, current_user_id, token)
-                    elif choice == "Contrat" and can_perform_action(current_user_department, "get_all_contracts"):
+                    elif choice == "Contrat" and can_perform_action(
+                        current_user_department, "get_all_contracts"
+                    ):
                         contract_menu(current_user_department, current_user_id, token)
-                    elif choice == "Événement" and can_perform_action(current_user_department, "get_all_events"):
+                    elif choice == "Événement" and can_perform_action(
+                        current_user_department, "get_all_events"
+                    ):
                         event_menu(current_user_department, current_user_id, token)
-                    elif choice == "Client" and can_perform_action(current_user_department, "get_all_clients"):
+                    elif choice == "Client" and can_perform_action(
+                        current_user_department, "get_all_clients"
+                    ):
                         client_menu(current_user_department, current_user_id, token)
                     elif choice == "Déconnexion":
                         delete_token()
@@ -131,6 +171,7 @@ def main_menu():
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     main_menu()

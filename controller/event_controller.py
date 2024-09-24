@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from model.event_model import Event
 from datetime import datetime
-from authentication.auth_service import get_current_user_role, can_perform_action
 from authentication.auth_utils import handle_errors, requires_permission
 
 
@@ -15,8 +14,12 @@ def get_all_events(db: Session, token: str):
 
 @handle_errors
 @requires_permission("create_event")
-def create_event(db: Session, user_id: int, token: str,event_name: str, contract_id: int, client_id: int, client_name: str, client_contact: str, 
-date_start: datetime, date_end: datetime, support_contact_id: int, location: str, attendees: int, notes: str):
+def create_event(
+    db: Session, user_id: int, token: str, event_name: str,
+    contract_id: int, client_id: int, client_name: str, client_contact: str,
+    date_start: datetime, date_end: datetime, support_contact_id: int,
+    location: str, attendees: int, notes: str
+):
     """
     Crée un nouvel événement dans la base de données.
     """
@@ -41,7 +44,9 @@ date_start: datetime, date_end: datetime, support_contact_id: int, location: str
 
 @handle_errors
 @requires_permission("update_event")
-def update_event(db: Session, user_id: int, token: str, event_id: int, **kwargs):
+def update_event(
+    db: Session, user_id: int, token: str, event_id: int, **kwargs
+):
     """
     Met à jour un événement existant avec les informations fournies.
     """
@@ -63,11 +68,6 @@ def delete_event(db: Session, event_id: int, user_id: int, token: str):
     """
     Supprime un événement de la base de données.
     """
-    user_role = get_current_user_role(user_id, db, token)
-    
-    if not can_perform_action(user_role, "delete_event"):
-        raise PermissionError("Action non autorisée.")
-    
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         return None

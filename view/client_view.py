@@ -2,14 +2,27 @@ from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from sqlalchemy.orm import Session
-from controller.client_controller import get_all_clients, create_client, update_client, delete_client
+from controller.client_controller import (
+    get_all_clients,
+    create_client,
+    update_client,
+    delete_client
+    )
 from config import SessionLocal
-from authentication.auth_service import can_perform_action, get_current_user_role
+from authentication.auth_service import (
+    can_perform_action,
+    get_current_user_role
+    )
 from authentication.auth_token import get_user_from_token, load_token
 from controller.user_controller import get_commercials
-from view.validation import validate_email, validate_phone_number, validate_text
+from view.validation import (
+    validate_email,
+    validate_phone_number,
+    validate_text)
+
 
 console = Console()
+
 
 def display_clients(db: Session, token: str):
     """
@@ -58,10 +71,12 @@ def select_commercial(db: Session, token: str):
     """
     commercials = get_commercials(db, token)
     if not commercials:
-        console.print("\n[[blue]Aucun commercial disponible.[/blue]\n[")
+        console.print
+        ("\n[[blue]Aucun commercial disponible.[/blue]\n[")
         return None
 
-    choices = [(f"{commercial.id} - {commercial.complete_name}", commercial.id) for commercial in commercials]
+    choices = [(f"{commercial.id} - {commercial.complete_name}",
+                commercial.id) for commercial in commercials]
     choices.insert(0, ("Retour en arrière", None))
 
     choice = inquirer.select(
@@ -81,11 +96,13 @@ def prompt_create_client(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de saisir les informations pour créer un nouveau client.
     """
-    
+
     user_role = get_current_user_role(user_id, db, token)
 
     if not can_perform_action(user_role, "create_client"):
-        console.print("\n[red]Vous n'avez pas les droits nécessaires pour créer un client view.[/red]\n")
+        console.print(
+            "\n[red]Vous n'avez pas les droits nécessaires pour créer un client view.[/red]\n"
+            )
         return
 
     start_creation = inquirer.select(
@@ -100,24 +117,28 @@ def prompt_create_client(db: Session, user_id: int, token: str):
     full_name = inquirer.text(
         message="Entrez le nom complet du client :",
         validate=lambda result: validate_text(result),
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message=
+        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
     email = inquirer.text(
         message="Entrez l'email du client :",
         validate=lambda result: validate_email(result),
-        invalid_message="Veuillez entrer un email valide (exemple: utilisateur@domaine.com)."
+        invalid_message=
+        "Veuillez entrer un email valide (exemple: utilisateur@domaine.com)."
     ).execute()
 
     phone_number = inquirer.text(
         message="Entrez le numéro de téléphone :",
         validate=lambda result: validate_phone_number(result),
-        invalid_message="Veuillez entrer un numéro de téléphone valide (exemple 03 00 00 00 00 ))."
+        invalid_message=
+        "Veuillez entrer un numéro de téléphone valide (exemple 03 00 00 00 00 ))."
     ).execute()
 
     company_name = inquirer.text(
         message="Entrez le nom de l'entreprise :",
         validate=lambda result: validate_text(result) or result == "",
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message=
+        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     commercial_contact_id = select_commercial(db, token)
@@ -133,9 +154,15 @@ def prompt_create_client(db: Session, user_id: int, token: str):
             company_name=company_name if company_name else None,
             commercial_contact_id=commercial_contact_id
         )
-        console.print(f"\n[blue]Nouveau client créé :[/blue] {new_client.id}, Nom: {new_client.full_name}, Email: {new_client.email}\n")
+        console.print(
+            f"\n[blue]Nouveau client créé :[/blue]\n"
+            f"ID: {new_client.id},\n"
+            f"Nom: {new_client.full_name},\n"
+            f"Email: {new_client.email}\n"
+            )
     except ValueError as e:
         console.print(f"\n[red]{str(e)}[/red]\n")
+
 
 def prompt_update_client(db: Session, user_id: int, token: str):
     """
@@ -146,7 +173,9 @@ def prompt_update_client(db: Session, user_id: int, token: str):
         console.print("\n[blue]Aucun client disponible.[/blue]\n")
         return
 
-    client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
+    client_choices = [
+        (f"{client.id} - {client.full_name}", client.id) for client in clients
+        ]
     client_choices.insert(0, ("Retour en arrière", None))
 
     selected_client_text = inquirer.select(
@@ -158,24 +187,30 @@ def prompt_update_client(db: Session, user_id: int, token: str):
         console.print("\n[blue]Retour en arrière.[/blue]\n")
         return
 
-    client_id = next((id for text, id in client_choices if text == selected_client_text), None)
+    client_id = next(
+        (id for text, id in client_choices if text == selected_client_text), None
+        )
 
     full_name = inquirer.text(
         message="Entrez le nouveau nom complet (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_text(result) or result == "",
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message=
+        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     email = inquirer.text(
         message="Entrez le nouvel email (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_email(result) or result == "",
-        invalid_message="Veuillez entrer un email valide (exemple: utilisateur@domaine.com)."
+        invalid_message=
+        "Veuillez entrer un email valide (exemple: utilisateur@domaine.com)."
     ).execute()
 
     phone_number = inquirer.text(
         message="Entrez le nouveau numéro de téléphone (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_phone_number(result) or result == "",
-        invalid_message="Veuillez entrer un numéro de téléphone valide (uniquement des chiffres, avec ou sans +)."
+        invalid_message=
+        "Veuillez entrer un numéro de téléphone valide"
+        "(uniquement des chiffres, avec ou sans +)."
     ).execute()
 
 
@@ -185,7 +220,9 @@ def prompt_update_client(db: Session, user_id: int, token: str):
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
-    change_commercial = inquirer.confirm(message="Voulez-vous changer de commercial ?", default=False).execute()
+    change_commercial = inquirer.confirm(
+        message="Voulez-vous changer de commercial ?", default=False
+        ).execute()
 
     commercial_contact_id = select_commercial(db, token) if change_commercial else None
 
@@ -201,11 +238,12 @@ def prompt_update_client(db: Session, user_id: int, token: str):
     )
     if updated_client:
         console.print(
-            f"\n[blue]Client mis à jour :[/blue] {updated_client.id}, Nom: {updated_client.full_name}, Email: {updated_client.email}\n"
+            f"\n[blue]Client mis à jour :[/blue]{updated_client.id},
+            Nom: {updated_client.full_name},
+            Email: {updated_client.email}\n"
         )
     else:
         console.print(f"\n[red]Problème lors de la mise a jour client.[/red]\n")
-
 
 
 def prompt_delete_client(db: Session, user_id: int, token: str):
@@ -215,7 +253,9 @@ def prompt_delete_client(db: Session, user_id: int, token: str):
 
     clients = get_all_clients(db, token)
     if not clients:
-        console.print("\n[red]Aucun client disponible pour suppression.[/red]\n")
+        console.print(
+            "\n[red]Aucun client disponible pour suppression.[/red]\n"
+            )
         return
 
     client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
@@ -230,13 +270,19 @@ def prompt_delete_client(db: Session, user_id: int, token: str):
         console.print("\n[blue]Retour en arrière.[/blue]\n")
         return
 
-    client_id = next((id for text, id in client_choices if text == selected_client_text), None)
+    client_id = next(
+        (id for text, id in client_choices if text == selected_client_text), None
+        )
 
     client = delete_client(db, user_id, client_id, token)
     if client:
-        console.print(f"\n[blue]Client supprimé :[/blue] {client.id}, Nom: {client.full_name}\n")
+        console.print(
+            f"\n[blue]Client supprimé :[/blue]
+            {client.id}, Nom: {client.full_name}\n"
+            )
     else:
         console.print("\n[blue]Client non trouvé.[/blue]\n")
+
 
 def client_menu(current_user_role, user_id, token):
     db: Session = SessionLocal()
@@ -246,9 +292,11 @@ def client_menu(current_user_role, user_id, token):
         token = load_token()
         user = get_user_from_token(token, db)
         if not user:
-            console.print("\n[red]Token invalide ou expiré. Veuillez vous reconnecter.[/red]\n")
+            console.print(
+                "\n[red]Token invalide ou expiré. Veuillez vous reconnecter.[/red]\n"
+                )
             return
-        
+
         while True:
             menu_options = []
             if can_perform_action(current_user_role, "get_all_clients"):
@@ -266,7 +314,7 @@ def client_menu(current_user_role, user_id, token):
                 message="Gestion des Clients - Sélectionnez une action :",
                 choices=menu_options
             ).execute()
-    
+
             if choice == "Afficher tous les clients":
                 display_clients(db, token)
             elif choice == "Créer un nouveau client":

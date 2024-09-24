@@ -1,15 +1,19 @@
 from functools import wraps
 from jwt import ExpiredSignatureError
-from authentication.auth_service import get_current_user_role, can_perform_action
+from authentication.auth_service import (
+    get_current_user_role,
+    can_perform_action
+    )
 from rich.console import Console
 
 
 console = Console()
 
-# Gestion des permissions
+
 def requires_permission(action):
     """
-    Décorateur pour vérifier les permissions de l'utilisateur avant d'exécuter une fonction.
+    Décorateur pour vérifier les permissions de
+    l'utilisateur avant d'exécuter une fonction.
     """
     def decorator(func):
         @wraps(func)
@@ -22,10 +26,10 @@ def requires_permission(action):
     return decorator
 
 
-# Gestion des erreurs
 def handle_errors(func):
     """
-    Décorateur pour gérer les exceptions courantes et fournir des messages d'erreur cohérents.
+    Décorateur pour gérer les exceptions courantes
+    et fournir des messages d'erreur cohérents.
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -38,7 +42,9 @@ def handle_errors(func):
             console.print(f"[yellow]Erreur de validation : {str(ve)}[/yellow]")
             raise ValueError(str(ve))
         except ExpiredSignatureError:
-            console.print("[red]Jeton expiré. Veuillez vous reconnecter.[/red]")
+            console.print(
+                "[red]Jeton expiré. Veuillez vous reconnecter.[/red]"
+                )
             raise PermissionError("Jeton expiré. Veuillez vous reconnecter.")
         except Exception as e:
             console.print(f"[red]Erreur inattendue : {str(e)}[/red]")
