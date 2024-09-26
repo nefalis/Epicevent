@@ -22,7 +22,9 @@ def test_create_user(
     mock_session.return_value = mock_db
 
     department = Department(name='gestion', id=1)
-    mock_db.query.return_value.filter.return_value.first.return_value = department
+    mock_db.query.return_value.filter.return_value.first.return_value = (
+        department
+    )
 
     user = create_user(
         db=mock_db,

@@ -10,7 +10,7 @@ from config import SECRET_KEY_TOKEN, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 def login_user(
     db: Session, employee_number: str, password: str
-    ) -> Optional[str]:
+) -> Optional[str]:
     """
     Service pour authentifier et connecter un utilisateur.
     """
@@ -140,5 +140,7 @@ def can_perform_action(user_department: str, action: str) -> bool:
         }
     }
 
-    result = permissions.get(user_department, permissions["default"]).get(action, False)
+    result = permissions.get(
+        user_department, permissions["default"]
+        ).get(action, False)
     return result

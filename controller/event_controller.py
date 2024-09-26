@@ -64,7 +64,7 @@ def update_event(
 
 @handle_errors
 @requires_permission("delete_event")
-def delete_event(db: Session, event_id: int, user_id: int, token: str):
+def delete_event(db: Session, user_id: int, token: str, event_id: int):
     """
     Supprime un événement de la base de données.
     """

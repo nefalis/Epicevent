@@ -21,7 +21,9 @@ from authentication.auth import login, logout
 import sentry_sdk
 
 sentry_sdk.init(
-    dsn="https://7ca766726f13e2fedaf654f7d4401130@o4507843819405312.ingest.de.sentry.io/4507843832053840",
+    dsn=(
+        "https://7ca766726f13e2fedaf654f7d4401130@o4507843819405312.ingest"
+        ".de.sentry.io/4507843832053840"),
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
 )
@@ -76,10 +78,12 @@ def main_menu():
 
                             console.print(
                                 f"\n [blue]Connexion réussie!"
-                                "Bienvenue {user.complete_name}.[/blue]"
+                                f"Bienvenue {user.complete_name}.[/blue]"
                                 )
                         else:
-                            console.print("[red]Erreur lors de la création du jeton.[/red]")
+                            console.print(
+                                "[red]Erreur lors de la création du jeton.[/red]"
+                                )
                     else:
                         console.print(
                             "[red]Numéro d'employé ou mot de passe incorrect.[/red]"
@@ -93,7 +97,8 @@ def main_menu():
                 # Vérifier si le jeton est expiré
                 if token is None:
                     console.print(
-                        "[red]Aucun jeton trouvé. Vous allez être déconnecté.[/red]"
+                        "[red]Aucun jeton trouvé."
+                        "Vous allez être déconnecté.[/red]"
                         )
                     delete_token()
                     logout()
@@ -103,7 +108,8 @@ def main_menu():
 
                 if not check_token_expiry(token):
                     console.print(
-                        "[red]Votre session a expiré. Vous allez être déconnecté.[/red]"
+                        "[red]Votre session a expiré."
+                        "Vous allez être déconnecté.[/red]"
                         )
                     delete_token()
                     logout()
@@ -117,14 +123,17 @@ def main_menu():
                     current_user_department, "get_all_users"
                 ):
                     menu_options.append("Utilisateur")
+
                 if can_perform_action(
                     current_user_department, "get_all_contracts"
                 ):
                     menu_options.append("Contrat")
+
                 if can_perform_action(
                     current_user_department, "get_all_events"
                 ):
                     menu_options.append("Événement")
+
                 if can_perform_action(
                     current_user_department, "get_all_clients"
                 ):
@@ -143,18 +152,22 @@ def main_menu():
                         current_user_department, "get_all_users"
                     ):
                         user_menu(current_user_department, current_user_id, token)
+
                     elif choice == "Contrat" and can_perform_action(
                         current_user_department, "get_all_contracts"
                     ):
                         contract_menu(current_user_department, current_user_id, token)
+
                     elif choice == "Événement" and can_perform_action(
                         current_user_department, "get_all_events"
                     ):
                         event_menu(current_user_department, current_user_id, token)
+
                     elif choice == "Client" and can_perform_action(
                         current_user_department, "get_all_clients"
                     ):
                         client_menu(current_user_department, current_user_id, token)
+
                     elif choice == "Déconnexion":
                         delete_token()
                         logout()
@@ -162,6 +175,7 @@ def main_menu():
                         current_user_id = None
                         token = None
                         console.print("[yellow]Vous êtes déconnecté.[/yellow]")
+
                     elif choice == "Quitter":
                         console.print("[red]Fermeture du programme...[/red]")
                         break

@@ -21,6 +21,7 @@ from view.validation import validate_digits, validate_text
 
 console = Console()
 
+
 def display_events(db: Session, token: str):
     """
     Affiche tous les événements.
@@ -143,8 +144,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
     client_contact = inquirer.text(
         message="Entrez le contact du client :",
         validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
 # Saisie et validation des dates
@@ -184,8 +184,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
     location = inquirer.text(
         message="Entrez le lieu :",
         validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     attendees = inquirer.text(
@@ -197,8 +196,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
     notes = inquirer.text(
         message="Entrez les notes :",
         validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     # Création de l'événement
@@ -218,7 +216,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         attendees=attendees,
         notes=notes
     )
-    console.print(f"\n [blue]Événement créé avec succès ![/blue] \n")
+    console.print("\n [blue]Événement créé avec succès ![/blue] \n")
 
 
 def prompt_update_event(db: Session, user_id: int, token: str):
@@ -231,8 +229,9 @@ def prompt_update_event(db: Session, user_id: int, token: str):
         console.print("\n[blue]Aucun événement disponible pour mise à jour.[/blue]\n")
         return
 
-    event_choices = [(f"{event.id} - {event.event_name}", event.id)
-                    for event in events]
+    event_choices = [
+        (f"{event.id} - {event.event_name}", event.id)for event in events
+        ]
     event_choices.insert(0, ("Retour en arrière", None))
 
     event_id = inquirer.select(
@@ -256,22 +255,22 @@ def prompt_update_event(db: Session, user_id: int, token: str):
     event_name = inquirer.text(
         message=f"Nom de l'événement actuel : {event.event_name}. "
                 "Entrez le nouveau nom (laisser vide pour conserver) :",
-        validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        validate=lambda result: validate_text(result) if result else True,
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     date_start_str = inquirer.text(
-        message=
-        f"Date de début actuelle : {event.date_start.strftime('%Y-%m-%d %H:%M')}.
-        Entrez la nouvelle date de début (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :",
+        message=f"Date de début actuelle : {event.date_start.strftime('%Y-%m-%d %H:%M')}."
+        f"Entrez la nouvelle date de début (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :",
         validate=lambda result: result == "" or datetime.strptime(result, "%Y-%m-%d %H:%M"),
         filter=lambda result: datetime.strptime(result, "%Y-%m-%d %H:%M") if result else event.date_start
     ).execute()
 
     date_end_str = inquirer.text(
-        message=f"Date de fin actuelle : {event.date_end.strftime('%Y-%m-%d %H:%M')}.
-        Entrez la nouvelle date de fin (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :",
+        message=(
+            f"Date de fin actuelle : {event.date_end.strftime('%Y-%m-%d %H:%M')}. "
+            "Entrez la nouvelle date de fin (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :"
+        ),
         validate=lambda result: result == "" or datetime.strptime(result, "%Y-%m-%d %H:%M"),
         filter=lambda result: datetime.strptime(result, "%Y-%m-%d %H:%M") if result else event.date_end
     ).execute()
@@ -288,29 +287,24 @@ def prompt_update_event(db: Session, user_id: int, token: str):
         return
 
     attendees = inquirer.text(
-        message=
-        f"Nombre de participant actuel : {event.attendees}.
-        Entrez le nouveau nombre de participant (laisser vide pour conserver) :",
-        validate=lambda result: validate_digits(result),
+        message=f"Nombre de participant actuel : {event.attendees}. "
+                "Entrez le nouveau nombre de participant (laisser vide pour conserver) :",
+        validate=lambda result: validate_digits(result) if result else True,
         invalid_message="Veuillez entrer uniquement des chiffres."
     ).execute()
 
     location = inquirer.text(
-        message=
-        f"Lieu actuel : {event.location}.
-        Entrez le nouveau lieu (laisser vide pour conserver) :",
-        validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        message=f"Lieu actuel : {event.location}. "
+                "Entrez le nouveau lieu (laisser vide pour conserver) :",
+        validate=lambda result: validate_text(result) if result else True,
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     notes = inquirer.text(
-        message=
-        f"Notes actuelles : {event.notes}.
-        Entrez les nouvelles notes (laisser vide pour conserver) :",
-        validate=lambda result: validate_text(result),
-        invalid_message=
-        "Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        message=f"Notes actuelles : {event.notes}. "
+                "Entrez les nouvelles notes (laisser vide pour conserver) :",
+        validate=lambda result: validate_text(result) if result else True,
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     update_event(
@@ -325,20 +319,21 @@ def prompt_update_event(db: Session, user_id: int, token: str):
         date_end=date_end,
         attendees=attendees
     )
-    console.print(f"\n [blue]Événement mis à jour avec succès ![/blue] \n")
+    console.print("\n [blue]Événement mis à jour avec succès ![/blue] \n")
 
 
 def prompt_delete_event(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un événement à supprimer.
     """
+    console.print(f"debug l331 {user_id}")
     events = get_all_events(db, token)
     if not events:
         console.print(
             "\n[blue]Aucun événement disponible pour suppression.[/blue]\n"
             )
         return
-
+    console.print(f"debug l338 {user_id}")
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id) for event in events
         ]
@@ -348,15 +343,27 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
         message="Sélectionnez un événement à supprimer :",
         choices=[choice for choice, _ in event_choices]
     ).execute()
-
+    console.print(f"debug l348 {user_id}")
     if event_id_text == "Retour en arrière":
         console.print("\n[blue]Retour en arrière.[/blue]\n")
         return
 
-    event_id = next((id for text, id in event_choices if text == event_id_text), None)
+    event_id = next((
+        id for text, id in event_choices
+        if text == event_id_text), None
+        )
+    console.print(f"debug l357 {user_id}")
+    confirmation = inquirer.confirm(
+        message=f"Êtes-vous sûr de vouloir supprimer l'événement' {event_id} ?",
+        default=False
+    ).execute()
+    console.print(f"debug l362 {user_id}")
+    if not confirmation:
+        console.print("\n[blue]Suppression annulée, événement non supprimé.[/blue]\n")
+        return
 
-    delete_event(db, event_id, user_id)
-    console.print(f"\n [blue]Événement supprimé avec succès ![/blue] \n")
+    delete_event(db, user_id, token, event_id)
+    console.print("\n [blue]Événement supprimé avec succès ![/blue] \n")
 
 
 def event_menu(current_user_role, user_id, token):

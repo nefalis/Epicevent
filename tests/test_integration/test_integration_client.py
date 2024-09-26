@@ -69,7 +69,7 @@ def test_create_client(
     )
 def test_update_client(
     mock_get_current_user_role, mock_requires_permission, test_db
-    ):
+):
     # Création d'un client pour la mise à jour
     new_client = create_client(
         db=test_db,

@@ -53,39 +53,19 @@ def create_client(
 @handle_errors
 @requires_permission("update_client")
 def update_client(
-    db: Session, user_id: int, token: str, client_id: int,
-    full_name: str = None, email: str = None, phone_number: str = None,
-    company_name: str = None, commercial_contact_id: int = None
+    db: Session, user_id: int, token: str, client_id: int, **kwargs
 ):
     """
     Fonction pour mettre à jour un client existant.
     """
+
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         return None
 
-    # Vérifie si le commercial existe dans la base de données
-    if commercial_contact_id:
-        commercial_contact = db.query(User).filter(
-            User.id == commercial_contact_id
-            ).first()
-        if not commercial_contact:
-            raise ValueError(
-                f"Aucun commercial trouvé avec l'ID {commercial_contact_id}."
-                )
+    for key, value in kwargs.items():
+        setattr(client, key, value)
 
-    if full_name is not None:
-        client.full_name = full_name
-    if email is not None:
-        client.email = email
-    if phone_number is not None:
-        client.phone_number = phone_number
-    if company_name is not None:
-        client.company_name = company_name
-    if commercial_contact_id is not None:
-        client.commercial_contact_id = commercial_contact_id
-
-    client.last_update = datetime.now()
     db.commit()
     db.refresh(client)
     return client
@@ -104,3 +84,10 @@ def delete_client(db: Session, user_id: int, token: str, client_id: int, ):
     db.delete(client)
     db.commit()
     return client
+
+
+def get_client_by_id(db: Session, client_id: int):
+    """
+    Récupère un client spécifique par son ID.
+    """
+    return db.query(Client).filter(Client.id == client_id).first()

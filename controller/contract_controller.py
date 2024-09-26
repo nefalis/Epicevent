@@ -5,7 +5,7 @@ from authentication.auth_utils import handle_errors, requires_permission
 
 
 @handle_errors
-def get_all_contracts(db: Session):
+def get_all_contracts(db: Session, token: str):
     """
     Fonction pour récupéré et afficher tous
     les contrats de la base de données

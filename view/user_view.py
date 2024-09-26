@@ -20,6 +20,7 @@ from view.validation import (
 
 console = Console()
 
+
 def get_department_color(department_name):
     """
     Retourne une couleur spécifique pour chaque rôle d'utilisateur.
@@ -51,12 +52,12 @@ def display_users(db: Session, token: str):
         department_name = user.department.name if user.department else "Inconnu"
         department_color = get_department_color(department_name) if user.department else "white"
         table.add_row(
-            f"[{department_color}]{user.id}[/{department_color }]",
-            f"[{department_color}]{user.employee_number}[/{department_color }]",
-            f"[{department_color}]{user.complete_name}[/{department_color }]",
-            f"[{department_color}]{user.email}[/{department_color }]",
-            f"[{department_color}]{department_name}[/{department_color }]",
-            f"[{department_color}]{user.creation_date}[/{department_color }]"
+            f"[{department_color}] {user.id}[/{department_color}]",
+            f"[{department_color}] {user.employee_number}[/{department_color}]",
+            f"[{department_color}] {user.complete_name}[/{department_color}]",
+            f"[{department_color}] {user.email}[/{department_color}]",
+            f"[{department_color}] {department_name}[/{department_color}]",
+            f"[{department_color}] {user.creation_date}[/{department_color}]"
         )
 
     console.print(table)
@@ -80,14 +81,15 @@ def prompt_create_user(db: Session, user_id: int, token: str):
     employee_number = inquirer.text(
         message="Entrez le numéro d'employé (2 lettres suivies de 4 chiffres) :",
         validate=lambda result: validate_employee_number(result),
-        invalid_message=
-        "Le numéro d'employé doit être composé de 2 lettres suivies de 4 chiffres (ex: AB1234)."
+        invalid_message="Le numéro d'employé doit être"
+        "composé de 2 lettres suivies de 4 chiffres (ex: AB1234)."
     ).execute()
 
     complete_name = inquirer.text(
         message="Entrez le nom complet :",
         validate=lambda result: validate_text(result),
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement"
+        "des lettres, espaces ou tiret."
     ).execute()
 
     email = inquirer.text(
@@ -99,9 +101,8 @@ def prompt_create_user(db: Session, user_id: int, token: str):
     password = inquirer.secret(
         message="Entrez le mot de passe :",
         validate=lambda result: validate_password(result),
-        invalid_message=
-        "Le mot de passe doit contenir au moins 8 caractères, une majuscule,"
-        "une minuscule et un chiffre."
+        invalid_message="Le mot de passe doit contenir au moins 8 caractères,"
+        "une majuscule, une minuscule et un chiffre."
     ).execute()
 
     department_name = inquirer.select(
@@ -135,6 +136,7 @@ def prompt_update_user(db: Session, user_id: int, token: str):
     mettre à jour un utilisateur avec possibilité de retour en arrière.
     """
 
+    console.print(f"debug l139 update user {user_id}")
     start_update = inquirer.select(
         message="Souhaitez-vous mettre à jour un utilisateur ?",
         choices=["Oui", "Retour en arrière"]
@@ -148,51 +150,51 @@ def prompt_update_user(db: Session, user_id: int, token: str):
     if not users:
         console.print("\n[red]Aucun utilisateur trouvé.[/red]\n")
         return
-
+    console.print(f"debug l153 update user {user_id}")
     user_choices = [f"{user.complete_name} (ID: {user.id})" for user in users]
     selected_user = inquirer.select(
         message="Sélectionnez l'utilisateur à modifier :",
         choices=user_choices
     ).execute()
 
-    user_id = int(selected_user.split("(ID: ")[1].split(")")[0])
-
+    selected_user_id = int(selected_user.split("(ID: ")[1].split(")")[0])
+    console.print(f"debug l161 update user {user_id}")
     complete_name = inquirer.text(
         message="Entrez le nouveau nom complet (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_text(result) if result else True,
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
-
+    console.print(f"debug l167 update user {user_id}")
     email = inquirer.text(
         message="Entrez le nouvel email (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_email(result) if result else True,
-        invalid_message=
-        "Veuillez entrer un email valide (exemple : utilisateur@domaine.com)."
+        invalid_message="Veuillez entrer un email valide (exemple : utilisateur@domaine.com)."
     ).execute()
-
+    console.print(f"debug l174 update user {user_id}")
     password = inquirer.secret(
         message="Entrez le nouveau mot de passe (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_password(result) if result else True,
-        invalid_message=
-        "Le mot de passe doit contenir au moins 8 caractères,"
-        "une majuscule, une minuscule et un chiffre."
+        invalid_message="Le mot de passe doit contenir au moins 8 caractères,"
+                        "une majuscule, une minuscule et un chiffre."
     ).execute()
-
+    console.print(f"debug l182 update user {user_id}")
     department_name = inquirer.select(
         message="Choisissez le nouveau département:",
         choices=["gestion", "commercial", "support", "Ne pas changer"]).execute()
 
+    console.print(f"debug l187 update user {user_id}")
+
     department_name = None if department_name == "Ne pas changer" else department_name
 
     updated_user = update_user(
-        db, user_id, token, complete_name, email, password, department_name
+        db, selected_user_id, token, complete_name, email, password, department_name
         )
-
+    console.print(f"debug l192 update user {user_id}")
     if updated_user:
         console.print(
-            f"\n [green] Utilisateur modifié : Nom: {updated_user.complete_name},
-            Numéro d'employé: {updated_user.employee_number},
-            Email: {updated_user.email} [/green]\n"
+            f"\n [green] Utilisateur modifié : Nom: {updated_user.complete_name},"
+            f"Numéro d'employé: {updated_user.employee_number},"
+            f"Email: {updated_user.email} [/green]\n"
             )
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
@@ -245,8 +247,9 @@ def prompt_delete_user(db: Session, token: str):
     user = delete_user(db, user_id, token=token)
     if user:
         console.print(
-            f"\n [green]Utilisateur supprimé :[/green] 
-            ID: {user.id}, Nom: {user.complete_name} \n")
+            f"\n [green]Utilisateur supprimé :[/green] "
+            f"ID: {user.id}, Nom: {user.complete_name} \n"
+        )
     else:
         console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 

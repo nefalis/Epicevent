@@ -32,7 +32,7 @@ def load_token() -> Optional[str]:
                 return token
             else:
                 print(
-                "debug load token l60 Le jeton n'est pas une chaîne valide"
+                    "debug load token l60 Le jeton n'est pas une chaîne valide"
                 )
     return None
 

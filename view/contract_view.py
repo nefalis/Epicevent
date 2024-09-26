@@ -19,11 +19,11 @@ from view.validation import validate_text
 console = Console()
 
 
-def display_contracts(db: Session):
+def display_contracts(db: Session, token: str):
     """
     Fonction pour afficher tous les contrats
     """
-    contracts = get_all_contracts(db)
+    contracts = get_all_contracts(db, token)
     if not contracts:
         console.print("\n[blue]Aucun contrat trouvé.[/blue]\n")
         return
@@ -56,7 +56,7 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
     Demande à l'utilisateur de saisir les
     informations pour créer un nouveau contrat.
     """
-    clients = get_all_clients(db)
+    clients = get_all_clients(db, token)
     commercials = get_commercials(db)
 
     if not clients:
@@ -64,7 +64,6 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
             "\n[blue]Aucun client disponible pour créer un contrat.[/blue]\n"
             )
         return
-
 
     if not commercials:
         console.print(
@@ -92,7 +91,8 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
         return
 
     client_id = next(
-        (id for text, id in client_choices if text == selected_client_text), None
+        (id for text, id in client_choices
+            if text == selected_client_text), None
         )
 
     commercial_contact_id = inquirer.select(
@@ -101,7 +101,8 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
     ).execute()
 
     commercial_contact_id = next(
-        (id for text, id in commercial_choices if text == commercial_contact_id), None
+        (id for text, id in commercial_choices
+            if text == commercial_contact_id), None
         )
 
     total_price = inquirer.text(
@@ -123,7 +124,8 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
     statut = inquirer.text(
         message="Entrez le statut du contrat :",
         validate=lambda result: validate_text(result) if result else True,
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement"
+        "des lettres, espaces ou tiret."
     ).execute()
 
     create_contract(
@@ -144,7 +146,7 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
     Demande à l'utilisateur de sélectionner un contrat
     à mettre à jour et les modifications à apporter.
     """
-    contracts = get_all_contracts(db)
+    contracts = get_all_contracts(db, token)
     if not contracts:
         console.print(
             "\n[blue]Aucun contrat disponible pour mise à jour.[/blue]\n"
@@ -152,7 +154,7 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"{contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
+        (f"Contrat ID {contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
         ]
     contract_choices.insert(0, ("Retour en arrière", None))
 
@@ -166,7 +168,8 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         return
 
     contract_id = next(
-        (id for text, id in contract_choices if text == selected_contract_text), None
+        (id for text, id in contract_choices
+            if text == selected_contract_text), None
         )
 
     contract = get_contract_by_id(db, contract_id)
@@ -177,26 +180,30 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
     total_price = inquirer.text(
         message=f"Prix total actuel : {contract.total_price}. "
                 "Entrez le nouveau prix (laisser vide pour conserver) :",
-    validate=lambda result: result.replace('.', '', 1).isdigit() and float(result) > 0 
-    if result else True,
-    filter=lambda result: float(result) if result else contract.total_price
+        validate=lambda result: result.replace('.', '', 1).isdigit() and float(result) > 0
+        if result else True,
+        filter=lambda result: float(result) if result else contract.total_price
     ).execute()
 
     remaining_price = inquirer.text(
-        message=f"Prix restant actuel : {contract.remaining_price}.
-        Entrez le nouveau prix restant (laisser vide pour conserver) :",
+        message=f"Prix restant actuel : {contract.remaining_price}."
+                f" Entrez le nouveau prix restant (laisser vide pour conserver) :",
         validate=lambda result: (
-            result.replace('.', '', 1).isdigit() and
-            (float(result) <= float(total_price) if result else True)
+            result == "" or
+            (result.replace('.', '', 1).isdigit() and
+                float(result) <= float(total_price))
         ),
         filter=lambda result: float(result) if result else contract.remaining_price
     ).execute()
 
     statut = inquirer.text(
-        message=f"Statut actuel : {contract.statut}.
-        Entrez le nouveau statut (laisser vide pour conserver) :",
+        message=(
+            f"Statut actuel : {contract.statut}. "
+            "Entrez le nouveau statut (laisser vide pour conserver) :"
+        ),
         validate=lambda result: validate_text(result) if result else True,
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        invalid_message="Le nom doit contenir uniquement"
+        "des lettres, espaces ou tiret."
     ).execute()
 
     update_contract(
@@ -215,7 +222,7 @@ def prompt_delete_contract(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un contrat à supprimer.
     """
-    contracts = get_all_contracts(db)
+    contracts = get_all_contracts(db, token)
     if not contracts:
         console.print(
             "\n[red]Aucun contrat disponible pour suppression.[/red]\n"
@@ -223,7 +230,7 @@ def prompt_delete_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"{contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
+        (f"Contrat ID {contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
         ]
     contract_choices.insert(0, ("Retour en arrière", None))
 
@@ -237,8 +244,18 @@ def prompt_delete_contract(db: Session, user_id: int, token: str):
         return
 
     contract_id = next(
-        (id for text, id in contract_choices if text == selected_contract_text), None
+        (id for text, id in contract_choices
+            if text == selected_contract_text), None
         )
+
+    confirmation = inquirer.confirm(
+        message=f"Êtes-vous sûr de vouloir supprimer le contrat {contract_id} ?",
+        default=False
+    ).execute()
+
+    if not confirmation:
+        console.print("\n[blue]Suppression annulée, contrat non supprimé.[/blue]\n")
+        return
 
     delete_contract(db, user_id, token, contract_id)
     console.print("\n[green]Contrat supprimé avec succès ![/green]\n")
@@ -271,7 +288,7 @@ def contract_menu(current_user_role, user_id, token):
             ).execute()
 
             if choice == "Lister les contrats":
-                display_contracts(db)
+                display_contracts(db, token)
             elif choice == "Ajouter un contrat":
                 prompt_create_contract(db, user_id, token)
             elif choice == "Modifier un contrat":

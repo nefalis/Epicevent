@@ -16,7 +16,12 @@ def get_all_users(db: Session, token: str):
     utilisateurs de la base de données
     """
     get_user_from_token(token, db)
-    users = db.query(User).join(Department).filter(Department.name != "manager").all()
+    users = (
+        db.query(User)
+        .join(Department)
+        .filter(Department.name != "manager")
+        .all()
+    )
     return users
 
 
@@ -29,7 +34,11 @@ def create_user(
     """
     Fonction pour créer un nouvel utilisateur dans la base de données
     """
-    department = db.query(Department).filter(Department.name == department_name).first()
+    department = (
+        db.query(Department)
+        .filter(Department.name == department_name)
+        .first()
+    )
     if not department:
         raise ValueError("Département non trouvé")
 
@@ -73,7 +82,11 @@ def update_user(
     if password:
         user.set_password(password)
     if department_name:
-        department = db.query(Department).filter(Department.name == department_name).first()
+        department = (
+            db.query(Department)
+            .filter(Department.name == department_name)
+            .first()
+            )
         if not department:
             raise ValueError("Département non trouvé")
         user.department_id = department.id
