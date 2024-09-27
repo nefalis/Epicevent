@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Configuration de la base de données
 DATABASE_URL = "mysql+pymysql://root:Dpm6+Sq52814@localhost/epicevent"
 
-# Créer l'instance
+# Création de l'instance
 engine = create_engine(DATABASE_URL)
 
 # Créer une classe de base pour les modèles

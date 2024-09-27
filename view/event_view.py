@@ -83,7 +83,6 @@ def prompt_create_event(db: Session, user_id: int, token: str):
             )
         return
 
-    # Sélection du client
     client_choices = [(f"{client.id} - {client.full_name}", client.id) for client in clients]
     client_choices.insert(0, ("Retour en arrière", None))
 
@@ -114,23 +113,26 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         (f"{contract.id} - {contract.client.full_name}", contract.id)
         for contract in contracts
         ]
+
     selected_contract_text = inquirer.select(
         message=f"Sélectionnez un contrat pour {selected_client.full_name} :",
         choices=[choice for choice, _ in contract_choices]
     ).execute()
+
     selected_contract_id = next(
         (id for text, id in contract_choices if text == selected_contract_text), None
         )
 
-    # Sélection du contact support
     support_choices = [
         (f"{support.id} - {support.complete_name}", support.id)
         for support in supports
         ]
+
     support_contact_text = inquirer.select(
         message="Sélectionnez un contact support :",
         choices=[choice for choice, _ in support_choices]
     ).execute()
+
     support_contact_id = next(
         (id for text, id in support_choices if text == support_contact_text), None
         )
@@ -147,7 +149,6 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
-# Saisie et validation des dates
     while True:
         try:
             date_start = inquirer.text(
@@ -199,7 +200,6 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
-    # Création de l'événement
     create_event(
         db,
         user_id=user_id,
@@ -279,7 +279,6 @@ def prompt_update_event(db: Session, user_id: int, token: str):
     date_start = date_start_str if isinstance(date_start_str, datetime) else event.date_start
     date_end = date_end_str if isinstance(date_end_str, datetime) else event.date_end
 
-    # Vérification si la date de fin est après la date de début
     if date_end <= date_start:
         console.print(
             "[red]Erreur : La date de fin doit être après la date de début.[/red]"
@@ -334,7 +333,7 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
             "\n[blue]Aucun événement disponible pour suppression.[/blue]\n"
             )
         return
-    
+
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id) for event in events
         ]
@@ -382,7 +381,6 @@ def event_menu(current_user_role, user_id, token):
                 )
             return
         while True:
-            # Obtenir les options de menu en fonction des permissions
             menu_options = []
             if can_perform_action(current_user_role, "get_all_events"):
                 menu_options.append("Lister les événements")

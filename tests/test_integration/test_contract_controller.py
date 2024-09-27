@@ -13,6 +13,9 @@ from controller.contract_controller import (
 
 @pytest.fixture(scope="module")
 def test_db():
+    """
+    Fonction qui crée une base de données SQLite en mémoire pour les tests.
+    """
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(
@@ -27,6 +30,9 @@ def test_db():
 
 @pytest.fixture(autouse=True)
 def mock_requires_permission():
+    """
+    Cette fonction simule la vérification des permissions sans appliquer réellement les vérifications.
+    """
     with mock.patch(
         "controller.contract_controller.requires_permission",
         side_effect=lambda x: lambda f: f
@@ -44,6 +50,7 @@ def mock_requires_permission():
 def test_create_contract(
     mock_get_current_user_role, mock_requires_permission, test_db
 ):
+    """Test pour la création d'un contrat."""
     new_contract = create_contract(
         db=test_db,
         user_id=1,
@@ -73,6 +80,7 @@ def test_create_contract(
 def test_update_contract(
     mock_get_current_user_role, mock_requires_permission, test_db
 ):
+    """Test pour la mise à jour d'un contrat."""
     new_contract = create_contract(
         db=test_db,
         user_id=1,
@@ -108,6 +116,7 @@ def test_update_contract(
 def test_delete_contract(
     mock_get_current_user_role, mock_requires_permission, test_db
 ):
+    """Test pour la suppression d'un contrat."""
     new_contract = create_contract(
         db=test_db,
         user_id=1,

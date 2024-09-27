@@ -1,10 +1,10 @@
 import jwt
 import os
+from config import SECRET_KEY_TOKEN, ALGORITHM, TOKEN_FILE
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from model.user_model import User
-from config import SECRET_KEY_TOKEN, ALGORITHM, TOKEN_FILE
 
 
 def create_jwt_token(
@@ -20,11 +20,13 @@ def create_jwt_token(
 
 
 def save_token(token: str):
+    """Enregistre le jeton JWT dans un fichier."""
     with open(TOKEN_FILE, "w") as file:
         file.write(token)
 
 
 def load_token() -> Optional[str]:
+    """Charge le jeton JWT à partir d'un fichier."""
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as file:
             token = file.read().strip()
@@ -38,6 +40,7 @@ def load_token() -> Optional[str]:
 
 
 def delete_token():
+    """Supprime le fichier contenant le jeton JWT."""
     if os.path.exists(TOKEN_FILE):
         os.remove(TOKEN_FILE)
 

@@ -95,7 +95,6 @@ def main_menu():
                     break
 
             else:
-                # Vérifier si le jeton est expiré
                 if token is None:
                     console.print(
                         "[red]Aucun jeton trouvé."
@@ -186,6 +185,7 @@ def main_menu():
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     main_menu()

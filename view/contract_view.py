@@ -13,17 +13,16 @@ from controller.contract_controller import (
 from controller.client_controller import get_all_clients
 from authentication.auth_service import can_perform_action
 from controller.user_controller import get_commercials
-from view.validation import validate_text
 
 
 console = Console()
 
 
 STATUTS_CONTRAT = [
-    "En négociation", 
-    "Signé", 
-    "En cours", 
-    "Terminé", 
+    "En négociation",
+    "Signé",
+    "En cours",
+    "Terminé",
     "Annulé"
 ]
 
@@ -164,7 +163,7 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'N/A'}", contract.id) 
+        (f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'N/A'}", contract.id)
         for contract in contracts
         ]
     contract_choices.insert(0, ("Retour en arrière", None))
@@ -196,16 +195,18 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
 
     selected_commercial_text = inquirer.select(
         message="Sélectionnez un nouveau commercial (laisser vide pour conserver) :",
-        choices=[f"Conserver le commercial actuel : {contract.commercial_contact.complete_name if contract.commercial_contact else 'N/A'}"] + 
-                [choice for choice, _ in commercial_choices]
+        choices=[
+            f"Conserver le commercial actuel : "
+            f"{contract.commercial_contact.complete_name if contract.commercial_contact else 'N/A'}"
+        ] + [choice for choice, _ in commercial_choices]
     ).execute()
 
     if selected_commercial_text.startswith("Conserver"):
         commercial_contact_id = contract.commercial_contact.id if contract.commercial_contact else None
     else:
         commercial_contact_id = next(
-            (id for text, id in commercial_choices
-            if text == selected_commercial_text), None
+            (id for text, id in commercial_choices if text == selected_commercial_text),
+            None
         )
 
     total_price = inquirer.text(
@@ -257,9 +258,12 @@ def prompt_delete_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'Client non spécifié'}", contract.id) 
+        (
+            f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'Client non spécifié'}",
+            contract.id
+        )
         for contract in contracts
-        ]
+    ]
     contract_choices.insert(0, ("Retour en arrière", None))
 
     selected_contract_text = inquirer.select(
@@ -297,7 +301,6 @@ def contract_menu(current_user_role, user_id, token):
 
     try:
         while True:
-            # Obtenir les options de menu en fonction des permissions
             menu_options = []
             if can_perform_action(current_user_role, "get_all_contracts"):
                 menu_options.append("Lister les contrats")

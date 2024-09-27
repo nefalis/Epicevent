@@ -2,13 +2,17 @@ import re
 
 
 def validate_text(text: str) -> bool:
-    """Vérifie que le texte contient uniquement des lettres,
-    espaces et certains caractères spéciaux appropriés."""
+    """
+    Vérifie que le texte contient uniquement des lettres,
+    espaces et certains caractères spéciaux appropriés.
+    """
     return bool(re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ '-]+$", text))
 
 
 def validate_email(email: str) -> bool:
-    """Valide que l'email est dans un format correct."""
+    """
+    Valide que l'email est dans un format correct.
+    """
     return bool(
         re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email)
         )
@@ -33,7 +37,6 @@ def validate_employee_number(employee_number: str) -> bool:
     """
     Valide que le numéro d'employé est composé
     de 2 lettres suivies de 4 chiffres.
-    Ex : AB1234
     """
     return bool(re.match(r"^[A-Za-z]{2}\d{4}$", employee_number))
 

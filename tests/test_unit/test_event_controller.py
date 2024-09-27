@@ -9,6 +9,7 @@ from controller.event_controller import create_event
 def test_create_event(
     mock_can_perform_action, mock_get_current_user_role, mock_session
 ):
+    """Test pour la création d'un événement."""
     mock_db = mock.Mock()
 
     mock_get_current_user_role.return_value = "manager"

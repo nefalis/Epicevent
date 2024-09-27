@@ -1,11 +1,11 @@
 from typing import Optional
 from datetime import timedelta
 from sqlalchemy.orm import Session
+from config import SECRET_KEY_TOKEN, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from authentication.auth import logout
 from authentication.auth_controller import authenticate_user
 from model.user_model import User
 from authentication.auth_token import create_jwt_token, save_token
-from config import SECRET_KEY_TOKEN, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 def login_user(

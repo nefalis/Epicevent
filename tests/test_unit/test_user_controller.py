@@ -16,6 +16,7 @@ from model.user_model import User, Department
 def test_create_user(
     mock_can_perform_action, mock_get_current_user_role, mock_session
 ):
+    """Test pour la création d'un utilisateur"""
     mock_db = mock.Mock()
     mock_get_current_user_role.return_value = "manager"
 
@@ -54,6 +55,7 @@ def test_create_user(
 def test_update_user(
     mock_can_perform_action, mock_get_current_user_role, mock_session
 ):
+    """Test pour la modification d'un utilisateur."""
     mock_db = mock.Mock()
     mock_get_current_user_role.return_value = "manager"
     mock_session.return_value = mock_db
@@ -84,6 +86,7 @@ def test_update_user(
 def test_delete_user(
     mock_can_perform_action, mock_get_current_user_role, mock_session
 ):
+    """Test pour supprimer un utilisateur."""
     mock_db = mock.Mock()
     mock_get_current_user_role.return_value = "manager"
     mock_session.return_value = mock_db

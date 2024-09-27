@@ -1,11 +1,11 @@
 from functools import wraps
 import sentry_sdk
 from jwt import ExpiredSignatureError
+from rich.console import Console
 from authentication.auth_service import (
     get_current_user_role,
     can_perform_action
     )
-from rich.console import Console
 
 
 console = Console()

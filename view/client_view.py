@@ -2,6 +2,7 @@ from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from sqlalchemy.orm import Session
+from config import SessionLocal
 from controller.client_controller import (
     get_all_clients,
     create_client,
@@ -9,7 +10,6 @@ from controller.client_controller import (
     delete_client,
     get_client_by_id
     )
-from config import SessionLocal
 from authentication.auth_service import (
     can_perform_action,
     get_current_user_role
@@ -29,7 +29,6 @@ def display_clients(db: Session, token: str):
     """
     Affiche la liste des clients.
     """
-
     clients = get_all_clients(db, token)
     if not clients:
         console.print("\n[blue]Aucun client trouvé.[/blue]\n")
@@ -214,7 +213,7 @@ def prompt_update_client(db: Session, user_id: int, token: str):
         message=f"Email actuel : {client.email}\n"
                 "Entrez le nouvel email (laissez vide pour ne pas changer) :",
         validate=lambda result: validate_email(result) if result else True,
-        invalid_message="Veuillez entrer un email valide (exemple: utilisateur@domaine.com)."
+        invalid_message="Veuillez entrer un email valide (exemple: utilisateur@mail.com)."
     ).execute() or client.email
 
     phone_number = inquirer.text(
@@ -236,7 +235,6 @@ def prompt_update_client(db: Session, user_id: int, token: str):
     ).execute()
     commercial_contact_id = select_commercial(db, token) if change_commercial else client.commercial_contact_id
 
-    # Mettre à jour le client
     updated_client = update_client(
         db,
         user_id,
@@ -262,7 +260,6 @@ def prompt_delete_client(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un client à supprimer.
     """
-
     clients = get_all_clients(db, token)
     if not clients:
         console.print(
@@ -304,10 +301,9 @@ def prompt_delete_client(db: Session, user_id: int, token: str):
 
 
 def client_menu(current_user_role, user_id, token):
+    """Affiche le menu de gestion des clients."""
     db: Session = SessionLocal()
-
     try:
-        # Vérifier que le token est valide et obtenir l'utilisateur
         token = load_token()
         user = get_user_from_token(token, db)
         if not user:

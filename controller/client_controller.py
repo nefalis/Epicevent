@@ -26,10 +26,10 @@ def create_client(
     """
     Fonction pour créer un nouveau client.
     """
-    # Vérifie si le commercial existe dans la base de données
     commercial_contact = db.query(User).filter(
         User.id == commercial_contact_id
         ).first() if commercial_contact_id else None
+
     if commercial_contact_id and not commercial_contact:
         raise ValueError(
             f"Aucun commercial trouvé avec l'ID {commercial_contact_id}."
@@ -44,6 +44,7 @@ def create_client(
         last_update=datetime.now(),
         commercial_contact_id=commercial_contact_id
     )
+
     db.add(new_client)
     db.commit()
     db.refresh(new_client)
@@ -58,7 +59,6 @@ def update_client(
     """
     Fonction pour mettre à jour un client existant.
     """
-
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         return None

@@ -2,6 +2,7 @@ from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from sqlalchemy.orm import Session
+from config import SessionLocal
 from model.user_model import User
 from controller.user_controller import (
     get_all_users,
@@ -10,7 +11,6 @@ from controller.user_controller import (
     delete_user,
     get_user_by_id
     )
-from config import SessionLocal
 from authentication.auth_service import can_perform_action
 from view.validation import (
     validate_email,
@@ -70,7 +70,6 @@ def prompt_create_user(db: Session, user_id: int, token: str):
     """
     Fonction pour demander les informations de l'utilisateur pour la création.
     """
-
     start_creation = inquirer.select(
         message="Souhaitez-vous créer un nouvel utilisateur ?",
         choices=["Oui", "Retour en arrière"]
@@ -88,10 +87,12 @@ def prompt_create_user(db: Session, user_id: int, token: str):
                             "composé de 2 lettres suivies de 4 chiffres (ex: AB1234)."
         ).execute()
 
-        # Vérification si le numéro d'employé existe déjà dans la base de données
         existing_employee = db.query(User).filter(User.employee_number == employee_number).first()
         if existing_employee:
-            console.print(f"\n[red]Erreur : Un utilisateur avec le numéro d'employé {employee_number} existe déjà.[/red]\n")
+            console.print(
+                f"\n[red]Erreur : Un utilisateur avec le numéro d'employé "
+                f"{employee_number} existe déjà.[/red]\n"
+            )
         else:
             break
 
@@ -145,7 +146,6 @@ def prompt_update_user(db: Session, user_id: int, token: str):
     Demande à l'utilisateur de sélectionner un utilisateur
     à mettre à jour et les modifications à apporter.
     """
-
     users = get_all_users(db, token)
     if not users:
         console.print("\n[blue]Aucun utilisateur disponible pour mise à jour.[/blue]\n")
@@ -202,7 +202,7 @@ def prompt_update_user(db: Session, user_id: int, token: str):
     ).execute()
 
     department_name = None if department_name == "Ne pas changer" else department_name
-    
+
     update_user(
         db,
         user_id=user_id,
@@ -218,6 +218,7 @@ def prompt_update_user(db: Session, user_id: int, token: str):
         f"\n [green] Utilisateur modifié : Nom: {complete_name},"
         f"Email: {email} [/green]\n"
         )
+
 
 def prompt_delete_user(db: Session, user_id: int, token: str):
     """
@@ -238,7 +239,6 @@ def prompt_delete_user(db: Session, user_id: int, token: str):
         console.print("\n[red]Aucun utilisateur trouvé.[/red]\n")
         return
 
-    # Créer une liste de choix avec les noms et IDs des utilisateurs
     user_choices = [(f"{user.complete_name} (ID: {user.id})", user.id) for user in users]
     user_choices.insert(0, ("Retour en arrière", None))
 
@@ -251,7 +251,6 @@ def prompt_delete_user(db: Session, user_id: int, token: str):
         console.print("\n[blue]Suppression annulée, retour au menu précédent.[/blue]\n")
         return
 
-    # Extraire l'ID de l'utilisateur sélectionné
     selected_user_id = next(
         (id for text, id in user_choices if text == selected_user_text), None
     )
@@ -265,16 +264,14 @@ def prompt_delete_user(db: Session, user_id: int, token: str):
         console.print("\n[blue]Suppression annulée, utilisateur non supprimé.[/blue]\n")
         return
 
-    # Supprimer l'utilisateur après confirmation
     delete_user(
         db,
         user_id,
         token,
         selected_user_id
         )
-    
-    console.print(f"\n [green]Utilisateur supprimé :[/green] ")
 
+    console.print("\n [green]Utilisateur supprimé :[/green] ")
 
 
 def user_menu(current_user_role, user_id, token):

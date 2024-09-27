@@ -68,7 +68,7 @@ def update_user(db: Session, user_id: int, token: str, selected_user_id: int, **
     """
     Fonction pour mettre à jour un utilisateur existant.
     """
-    user_to_update = db.query(User).filter(User.id == selected_user_id).first()  
+    user_to_update = db.query(User).filter(User.id == selected_user_id).first()
     if not user_to_update:
         return None
 
@@ -109,6 +109,7 @@ def get_users_by_role(db: Session, role: str):
         .filter(Department.name == role)
         .all()
     )
+
 
 def get_user_by_id(db: Session, user_id: int) -> User:
     """

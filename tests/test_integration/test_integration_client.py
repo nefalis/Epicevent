@@ -12,6 +12,9 @@ from controller.client_controller import (
 
 @pytest.fixture(scope="module")
 def test_db():
+    """
+    Fonction qui crée une base de données SQLite en mémoire pour les tests.
+    """
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -24,6 +27,9 @@ def test_db():
 
 @pytest.fixture(autouse=True)
 def mock_requires_permission():
+    """
+    Cette fonction simule la vérification des permissions sans appliquer réellement les vérifications.
+    """
     with mock.patch(
         "authentication.auth_utils.requires_permission",
         side_effect=lambda x: lambda f: f
@@ -42,6 +48,7 @@ def mock_requires_permission():
 def test_create_client(
     mock_get_current_user_role, mock_requires_permission, test_db
 ):
+    """Test pour la création d'un client."""
     new_client = create_client(
         db=test_db,
         user_id=1,
@@ -70,7 +77,7 @@ def test_create_client(
 def test_update_client(
     mock_get_current_user_role, mock_requires_permission, test_db
 ):
-    # Création d'un client pour la mise à jour
+    """Test pour la modification d'un client."""
     new_client = create_client(
         db=test_db,
         user_id=1,
@@ -103,6 +110,7 @@ def test_update_client(
         return_value='manager'
         )
 def test_delete_client(mock_get_current_user_role, test_db):
+    """Test pour supprimer un client."""
     new_client = create_client(
         db=test_db,
         user_id=1,
