@@ -231,7 +231,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
 
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id)for event in events
-        ]
+    ]
     event_choices.insert(0, ("Retour en arrière", None))
 
     event_id = inquirer.select(
@@ -286,12 +286,14 @@ def prompt_update_event(db: Session, user_id: int, token: str):
             )
         return
 
-    attendees = inquirer.text(
+    attendees_input = inquirer.text(
         message=f"Nombre de participant actuel : {event.attendees}. "
                 "Entrez le nouveau nombre de participant (laisser vide pour conserver) :",
         validate=lambda result: validate_digits(result) if result else True,
         invalid_message="Veuillez entrer uniquement des chiffres."
     ).execute()
+
+    attendees = int(attendees_input) if attendees_input else event.attendees
 
     location = inquirer.text(
         message=f"Lieu actuel : {event.location}. "
@@ -326,14 +328,13 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
     """
     Demande à l'utilisateur de sélectionner un événement à supprimer.
     """
-    console.print(f"debug l331 {user_id}")
     events = get_all_events(db, token)
     if not events:
         console.print(
             "\n[blue]Aucun événement disponible pour suppression.[/blue]\n"
             )
         return
-    console.print(f"debug l338 {user_id}")
+    
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id) for event in events
         ]
@@ -343,7 +344,7 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
         message="Sélectionnez un événement à supprimer :",
         choices=[choice for choice, _ in event_choices]
     ).execute()
-    console.print(f"debug l348 {user_id}")
+
     if event_id_text == "Retour en arrière":
         console.print("\n[blue]Retour en arrière.[/blue]\n")
         return
@@ -352,12 +353,12 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
         id for text, id in event_choices
         if text == event_id_text), None
         )
-    console.print(f"debug l357 {user_id}")
+
     confirmation = inquirer.confirm(
         message=f"Êtes-vous sûr de vouloir supprimer l'événement' {event_id} ?",
         default=False
     ).execute()
-    console.print(f"debug l362 {user_id}")
+
     if not confirmation:
         console.print("\n[blue]Suppression annulée, événement non supprimé.[/blue]\n")
         return

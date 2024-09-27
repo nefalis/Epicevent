@@ -1,4 +1,8 @@
 from sqlalchemy.orm import Session
+from InquirerPy import inquirer
+from rich.console import Console
+from rich.table import Table
+from config import SessionLocal
 from controller.contract_controller import (
     get_all_contracts,
     create_contract,
@@ -7,16 +11,21 @@ from controller.contract_controller import (
     get_contract_by_id,
 )
 from controller.client_controller import get_all_clients
-from InquirerPy import inquirer
-from rich.console import Console
-from rich.table import Table
-from config import SessionLocal
 from authentication.auth_service import can_perform_action
 from controller.user_controller import get_commercials
 from view.validation import validate_text
 
 
 console = Console()
+
+
+STATUTS_CONTRAT = [
+    "En négociation", 
+    "Signé", 
+    "En cours", 
+    "Terminé", 
+    "Annulé"
+]
 
 
 def display_contracts(db: Session, token: str):
@@ -37,10 +46,13 @@ def display_contracts(db: Session, token: str):
     table.add_column("Statut", justify="center", style="blue")
 
     for contract in contracts:
+        commercial_name = contract.commercial_contact.complete_name if contract.commercial_contact else "N/A"
+        client_name = contract.client.full_name if contract.client else "N/A"
+
         table.add_row(
             str(contract.id),
-            contract.client.full_name,
-            contract.commercial_contact.complete_name,
+            client_name,
+            commercial_name,
             f"{contract.total_price:.2f} €",
             f"{contract.remaining_price:.2f} €",
             contract.statut
@@ -121,11 +133,9 @@ def prompt_create_contract(db: Session, user_id: int, token: str):
         filter=lambda result: float(result)
     ).execute()
 
-    statut = inquirer.text(
-        message="Entrez le statut du contrat :",
-        validate=lambda result: validate_text(result) if result else True,
-        invalid_message="Le nom doit contenir uniquement"
-        "des lettres, espaces ou tiret."
+    statut = inquirer.select(
+        message="Sélectionnez le statut du contrat :",
+        choices=STATUTS_CONTRAT
     ).execute()
 
     create_contract(
@@ -154,7 +164,8 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"Contrat ID {contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
+        (f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'N/A'}", contract.id) 
+        for contract in contracts
         ]
     contract_choices.insert(0, ("Retour en arrière", None))
 
@@ -177,6 +188,26 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         console.print("\n[blue]Contrat non trouvé.[/blue]\n")
         return
 
+    commercials = get_commercials(db)
+    commercial_choices = [
+        (f"{commercial.id} - {commercial.complete_name}", commercial.id)
+        for commercial in commercials
+    ]
+
+    selected_commercial_text = inquirer.select(
+        message="Sélectionnez un nouveau commercial (laisser vide pour conserver) :",
+        choices=[f"Conserver le commercial actuel : {contract.commercial_contact.complete_name if contract.commercial_contact else 'N/A'}"] + 
+                [choice for choice, _ in commercial_choices]
+    ).execute()
+
+    if selected_commercial_text.startswith("Conserver"):
+        commercial_contact_id = contract.commercial_contact.id if contract.commercial_contact else None
+    else:
+        commercial_contact_id = next(
+            (id for text, id in commercial_choices
+            if text == selected_commercial_text), None
+        )
+
     total_price = inquirer.text(
         message=f"Prix total actuel : {contract.total_price}. "
                 "Entrez le nouveau prix (laisser vide pour conserver) :",
@@ -196,14 +227,9 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         filter=lambda result: float(result) if result else contract.remaining_price
     ).execute()
 
-    statut = inquirer.text(
-        message=(
-            f"Statut actuel : {contract.statut}. "
-            "Entrez le nouveau statut (laisser vide pour conserver) :"
-        ),
-        validate=lambda result: validate_text(result) if result else True,
-        invalid_message="Le nom doit contenir uniquement"
-        "des lettres, espaces ou tiret."
+    statut = inquirer.select(
+        message=f"Statut actuel : {contract.statut}. Sélectionnez le nouveau statut (laisser vide pour conserver) :",
+        choices=STATUTS_CONTRAT
     ).execute()
 
     update_contract(
@@ -213,7 +239,8 @@ def prompt_update_contract(db: Session, user_id: int, token: str):
         contract_id=contract_id,
         total_price=total_price,
         remaining_price=remaining_price,
-        statut=statut
+        statut=statut,
+        commercial_contact_id=commercial_contact_id
     )
     console.print("\n[blue]Contrat mis à jour avec succès ![/blue]\n")
 
@@ -230,7 +257,8 @@ def prompt_delete_contract(db: Session, user_id: int, token: str):
         return
 
     contract_choices = [
-        (f"Contrat ID {contract.id} - {contract.client.full_name}", contract.id) for contract in contracts
+        (f"Contrat ID {contract.id} - {contract.client.full_name if contract.client else 'Client non spécifié'}", contract.id) 
+        for contract in contracts
         ]
     contract_choices.insert(0, ("Retour en arrière", None))
 

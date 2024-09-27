@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import sentry_sdk
 from rich.console import Console
 from model.user_model import User, Department
 from datetime import datetime
@@ -52,63 +53,50 @@ def create_user(
     )
     new_user.set_password(password)
 
-    # Ajoute utilisateur à la session de la base de données
     db.add(new_user)
-    # Commit les changements dans la base de données
     db.commit()
-    # Actualise la session pour obtenir l'ID généré
     db.refresh(new_user)
+
+    sentry_sdk.capture_message(f"Utilisateur créé: {new_user.complete_name}, ID: {new_user.id}")
 
     return new_user
 
 
 @handle_errors
 @requires_permission("update_user")
-def update_user(
-    db: Session, user_id: int, token: str, complete_name: str = None,
-    email: str = None, password: str = None, department_name: str = None
-):
+def update_user(db: Session, user_id: int, token: str, selected_user_id: int, **kwargs):
     """
-    Fonction pour mettre à jour un utilisateur existant
+    Fonction pour mettre à jour un utilisateur existant.
     """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
+    user_to_update = db.query(User).filter(User.id == selected_user_id).first()  
+    if not user_to_update:
         return None
 
-    if complete_name:
-        user.complete_name = complete_name
-    if email:
-        user.email = email
-    if password:
-        user.set_password(password)
-    if department_name:
-        department = (
-            db.query(Department)
-            .filter(Department.name == department_name)
-            .first()
-            )
-        if not department:
-            raise ValueError("Département non trouvé")
-        user.department_id = department.id
+    for key, value in kwargs.items():
+        if value is not None:
+            setattr(user_to_update, key, value)
 
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(user_to_update)
+
+    sentry_sdk.capture_message(f"Utilisateur modifié: {user_to_update.complete_name}, ID: {user_to_update.id}")
+
+    return user_to_update
 
 
 @handle_errors
 @requires_permission("delete_user")
-def delete_user(db: Session, user_id: int, token: str):
+def delete_user(db: Session, user_id: int, token: str, selected_user_id: int):
     """
     Fonction pour supprimer un utilisateur
     """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
+    user_to_delete = db.query(User).filter(User.id == selected_user_id).first()
+    if not user_to_delete:
         return None
 
-    db.delete(user)
+    db.delete(user_to_delete)
     db.commit()
-    return user
+    return user_to_delete
 
 
 def get_users_by_role(db: Session, role: str):
@@ -121,6 +109,12 @@ def get_users_by_role(db: Session, role: str):
         .filter(Department.name == role)
         .all()
     )
+
+def get_user_by_id(db: Session, user_id: int) -> User:
+    """
+    Récupère un événement spécifique par son ID.
+    """
+    return db.query(User).filter(User.id == user_id).first()
 
 
 def get_commercials(db: Session):

@@ -3,4 +3,5 @@ env/
 __pycache__/
 .pytest_cache
 .flake8
+token.txt
 

@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import sentry_sdk
 from config import SessionLocal
 from InquirerPy import inquirer
 from rich.console import Console
@@ -18,7 +19,7 @@ from authentication.auth_token import (
     check_token_expiry
     )
 from authentication.auth import login, logout
-import sentry_sdk
+
 
 sentry_sdk.init(
     dsn=(
@@ -185,7 +186,6 @@ def main_menu():
 
     finally:
         db.close()
-
 
 if __name__ == "__main__":
     main_menu()

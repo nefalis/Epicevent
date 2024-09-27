@@ -2,11 +2,13 @@ from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 from sqlalchemy.orm import Session
+from model.user_model import User
 from controller.user_controller import (
     get_all_users,
     create_user,
     update_user,
-    delete_user
+    delete_user,
+    get_user_by_id
     )
 from config import SessionLocal
 from authentication.auth_service import can_perform_action
@@ -78,12 +80,20 @@ def prompt_create_user(db: Session, user_id: int, token: str):
         console.print("\n[blue]Création annulée, retour en arrière.[/blue]\n")
         return
 
-    employee_number = inquirer.text(
-        message="Entrez le numéro d'employé (2 lettres suivies de 4 chiffres) :",
-        validate=lambda result: validate_employee_number(result),
-        invalid_message="Le numéro d'employé doit être"
-        "composé de 2 lettres suivies de 4 chiffres (ex: AB1234)."
-    ).execute()
+    while True:
+        employee_number = inquirer.text(
+            message="Entrez le numéro d'employé (2 lettres suivies de 4 chiffres) :",
+            validate=lambda result: validate_employee_number(result),
+            invalid_message="Le numéro d'employé doit être"
+                            "composé de 2 lettres suivies de 4 chiffres (ex: AB1234)."
+        ).execute()
+
+        # Vérification si le numéro d'employé existe déjà dans la base de données
+        existing_employee = db.query(User).filter(User.employee_number == employee_number).first()
+        if existing_employee:
+            console.print(f"\n[red]Erreur : Un utilisateur avec le numéro d'employé {employee_number} existe déjà.[/red]\n")
+        else:
+            break
 
     complete_name = inquirer.text(
         message="Entrez le nom complet :",
@@ -132,75 +142,84 @@ def prompt_create_user(db: Session, user_id: int, token: str):
 
 def prompt_update_user(db: Session, user_id: int, token: str):
     """
-    Fonction pour demander les informations pour
-    mettre à jour un utilisateur avec possibilité de retour en arrière.
+    Demande à l'utilisateur de sélectionner un utilisateur
+    à mettre à jour et les modifications à apporter.
     """
-
-    console.print(f"debug l139 update user {user_id}")
-    start_update = inquirer.select(
-        message="Souhaitez-vous mettre à jour un utilisateur ?",
-        choices=["Oui", "Retour en arrière"]
-    ).execute()
-
-    if start_update == "Retour en arrière":
-        console.print("\n[blue]Mise à jour annulée, retour en arrière.[/blue]\n")
-        return
 
     users = get_all_users(db, token)
     if not users:
-        console.print("\n[red]Aucun utilisateur trouvé.[/red]\n")
+        console.print("\n[blue]Aucun utilisateur disponible pour mise à jour.[/blue]\n")
         return
-    console.print(f"debug l153 update user {user_id}")
-    user_choices = [f"{user.complete_name} (ID: {user.id})" for user in users]
+
+    user_choices = [
+        (f"{user.complete_name} (ID: {user.id})", user.id) for user in users
+    ]
+    user_choices.insert(0, ("Retour en arrière", None))
+
     selected_user = inquirer.select(
-        message="Sélectionnez l'utilisateur à modifier :",
-        choices=user_choices
+        message="Sélectionnez un utilisateur à modifier :",
+        choices=[choice for choice, _ in user_choices]
     ).execute()
 
-    selected_user_id = int(selected_user.split("(ID: ")[1].split(")")[0])
-    console.print(f"debug l161 update user {user_id}")
+    if selected_user == "Retour en arrière":
+        console.print("\n[blue]Retour en arrière.[/blue]\n")
+        return
+
+    selected_user_id = next(
+        (id for text, id in user_choices if text == selected_user), None
+    )
+
+    user = get_user_by_id(db, selected_user_id)
+    if not user:
+        console.print("\n[blue]Utilisateur non trouvé.[/blue]\n")
+        return
+
     complete_name = inquirer.text(
-        message="Entrez le nouveau nom complet (laissez vide pour ne pas changer) :",
+        message=f"Nom complet actuel : {user.complete_name}. "
+                "Entrez le nouveau nom (laisser vide pour conserver) :",
         validate=lambda result: validate_text(result) if result else True,
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
-    console.print(f"debug l167 update user {user_id}")
+
     email = inquirer.text(
-        message="Entrez le nouvel email (laissez vide pour ne pas changer) :",
+        message=f"Email actuel : {user.email}. "
+                "Entrez le nouvel email (laisser vide pour conserver) :",
         validate=lambda result: validate_email(result) if result else True,
         invalid_message="Veuillez entrer un email valide (exemple : utilisateur@domaine.com)."
     ).execute()
-    console.print(f"debug l174 update user {user_id}")
+    email = email if email else user.email
+
     password = inquirer.secret(
-        message="Entrez le nouveau mot de passe (laissez vide pour ne pas changer) :",
+        message="Entrez le nouveau mot de passe (laisser vide pour ne pas changer) :",
         validate=lambda result: validate_password(result) if result else True,
         invalid_message="Le mot de passe doit contenir au moins 8 caractères,"
                         "une majuscule, une minuscule et un chiffre."
     ).execute()
-    console.print(f"debug l182 update user {user_id}")
-    department_name = inquirer.select(
-        message="Choisissez le nouveau département:",
-        choices=["gestion", "commercial", "support", "Ne pas changer"]).execute()
 
-    console.print(f"debug l187 update user {user_id}")
+    department_name = inquirer.select(
+        message="Choisissez le nouveau département (laisser vide pour conserver) :",
+        choices=["gestion", "commercial", "support", "Ne pas changer"]
+    ).execute()
 
     department_name = None if department_name == "Ne pas changer" else department_name
-
-    updated_user = update_user(
-        db, selected_user_id, token, complete_name, email, password, department_name
+    
+    update_user(
+        db,
+        user_id=user_id,
+        token=token,
+        selected_user_id=selected_user_id,
+        complete_name=complete_name,
+        email=email,
+        password=password,
+        department_name=department_name
         )
-    console.print(f"debug l192 update user {user_id}")
-    if updated_user:
-        console.print(
-            f"\n [green] Utilisateur modifié : Nom: {updated_user.complete_name},"
-            f"Numéro d'employé: {updated_user.employee_number},"
-            f"Email: {updated_user.email} [/green]\n"
-            )
-    else:
-        console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
 
+    console.print(
+        f"\n [green] Utilisateur modifié : Nom: {complete_name},"
+        f"Email: {email} [/green]\n"
+        )
 
-def prompt_delete_user(db: Session, token: str):
+def prompt_delete_user(db: Session, user_id: int, token: str):
     """
     Fonction pour demander la suppression d'un utilisateur
     avec possibilité de retour en arrière.
@@ -220,22 +239,25 @@ def prompt_delete_user(db: Session, token: str):
         return
 
     # Créer une liste de choix avec les noms et IDs des utilisateurs
-    user_choices = [f"{user.complete_name} (ID: {user.id})" for user in users]
-    user_choices.insert(0, "Retour en arrière")
-    selected_user = inquirer.select(
+    user_choices = [(f"{user.complete_name} (ID: {user.id})", user.id) for user in users]
+    user_choices.insert(0, ("Retour en arrière", None))
+
+    selected_user_text = inquirer.select(
         message="Sélectionnez l'utilisateur à supprimer :",
-        choices=user_choices
+        choices=[choice for choice, _ in user_choices]
     ).execute()
 
-    if selected_user == "Retour en arrière":
+    if selected_user_text == "Retour en arrière":
         console.print("\n[blue]Suppression annulée, retour au menu précédent.[/blue]\n")
         return
 
     # Extraire l'ID de l'utilisateur sélectionné
-    user_id = int(selected_user.split("(ID: ")[1].split(")")[0])
+    selected_user_id = next(
+        (id for text, id in user_choices if text == selected_user_text), None
+    )
 
     confirmation = inquirer.confirm(
-        message=f"Êtes-vous sûr de vouloir supprimer l'utilisateur {selected_user} ?",
+        message=f"Êtes-vous sûr de vouloir supprimer l'utilisateur {selected_user_text} ?",
         default=False
     ).execute()
 
@@ -244,14 +266,15 @@ def prompt_delete_user(db: Session, token: str):
         return
 
     # Supprimer l'utilisateur après confirmation
-    user = delete_user(db, user_id, token=token)
-    if user:
-        console.print(
-            f"\n [green]Utilisateur supprimé :[/green] "
-            f"ID: {user.id}, Nom: {user.complete_name} \n"
+    delete_user(
+        db,
+        user_id,
+        token,
+        selected_user_id
         )
-    else:
-        console.print("\n [blue]Utilisateur non trouvé.[/blue] \n")
+    
+    console.print(f"\n [green]Utilisateur supprimé :[/green] ")
+
 
 
 def user_menu(current_user_role, user_id, token):
@@ -287,7 +310,7 @@ def user_menu(current_user_role, user_id, token):
                 elif choice == "Modifier un utilisateur":
                     prompt_update_user(db, user_id, token)
                 elif choice == "Supprimer un utilisateur":
-                    prompt_delete_user(db, token)
+                    prompt_delete_user(db, user_id, token)
                 elif choice == "Retour au menu principal":
                     break
             except PermissionError as e:

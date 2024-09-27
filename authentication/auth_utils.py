@@ -1,4 +1,5 @@
 from functools import wraps
+import sentry_sdk
 from jwt import ExpiredSignatureError
 from authentication.auth_service import (
     get_current_user_role,
@@ -48,5 +49,6 @@ def handle_errors(func):
             raise PermissionError("Jeton expiré. Veuillez vous reconnecter.")
         except Exception as e:
             console.print(f"[red]Erreur inattendue : {str(e)}[/red]")
+            sentry_sdk.capture_exception(e)
             raise Exception(f"Erreur inattendue : {str(e)}")
     return wrapper
