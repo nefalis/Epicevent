@@ -70,9 +70,9 @@ def test_update_user(
         complete_name="New Name",
         email="new@example.com",
         password=None,
-        department_name=None
+        department_name=None,
+        selected_user_id=user.id
     )
-
     assert updated_user.complete_name == "New Name"
     assert updated_user.email == "new@example.com"
     mock_db.commit.assert_called_once()
@@ -94,7 +94,12 @@ def test_delete_user(
     user = User(id=1, complete_name="Test User", email="test@example.com")
     mock_db.query.return_value.filter.return_value.first.return_value = user
 
-    deleted_user = delete_user(db=mock_db, user_id=1, token="fake_token")
+    deleted_user = delete_user(
+    db=mock_db,
+    user_id=1,
+    selected_user_id=user.id,
+    token="fake_token"
+    )
 
     assert deleted_user.complete_name == "Test User"
     mock_db.delete.assert_called_once_with(user)
