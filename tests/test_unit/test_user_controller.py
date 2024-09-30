@@ -95,10 +95,10 @@ def test_delete_user(
     mock_db.query.return_value.filter.return_value.first.return_value = user
 
     deleted_user = delete_user(
-    db=mock_db,
-    user_id=1,
-    selected_user_id=user.id,
-    token="fake_token"
+        db=mock_db,
+        user_id=1,
+        selected_user_id=user.id,
+        token="fake_token"
     )
 
     assert deleted_user.complete_name == "Test User"

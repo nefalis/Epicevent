@@ -4,8 +4,12 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
+
+# Charger les variables d'environnement du fichier .env
+load_dotenv()
+
 # Configuration de la base de données
-DATABASE_URL = "mysql+pymysql://root:Dpm6+Sq52814@localhost/epicevent"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Création de l'instance
 engine = create_engine(DATABASE_URL)
@@ -15,9 +19,6 @@ Base = declarative_base()
 
 # Créer une session pour interagir avec la base de données
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Charger les variables d'environnement du fichier .env
-load_dotenv()
 
 # Configuration pour JWT
 SECRET_KEY_TOKEN = os.getenv("SECRET_KEY_TOKEN")
