@@ -22,15 +22,45 @@ from view.validation import validate_digits, validate_text
 console = Console()
 
 
-def display_events(db: Session, token: str):
+def display_events(db: Session, current_user_role: str, user_id: int, token: str):
     """
     Affiche tous les événements.
     """
     events = get_all_events(db, token)
+    
     if not events:
         console.print("\n[blue]Aucun événement trouvé.[/blue]\n")
         return
 
+    if current_user_role == "gestion":
+        filter_choice = inquirer.select(
+            message="Souhaitez-vous appliquer un filtre ?",
+            choices=["Tous les événements", "Événements sans support"]
+        ).execute()
+    elif current_user_role == "support":
+        filter_choice = inquirer.select(
+            message="Souhaitez-vous appliquer un filtre ?",
+            choices=["Tous les événements", "Événements attribués à moi"]
+        ).execute()
+    else:
+        # Si le rôle est inconnu, afficher tous les événements sans filtrage
+        filter_choice = "Tous les événements"
+
+    # Appliquer le filtre si nécessaire
+    if filter_choice == "Événements sans support" and current_user_role == "gestion":
+        filtered_events = [event for event in events if not event.support_contact]
+    elif filter_choice == "Événements attribués à moi" and current_user_role == "support":
+        filtered_events = [event for event in events if event.support_contact and event.support_contact.id == user_id]
+    else:
+        # Si l'utilisateur choisit "Tous les événements", ne filtre pas
+        filtered_events = events
+
+    # Si aucun événement après filtrage
+    if not filtered_events:
+        console.print(f"\n[blue]Aucun événement trouvé pour le filtre : {filter_choice}.[/blue]\n")
+        return
+
+    # Afficher les événements filtrés avec toutes les colonnes
     table = Table(title="\nListe des Événements\n")
     table.add_column("ID", justify="center", style="cyan", no_wrap=True)
     table.add_column("Nom de l'événement", justify="center", style="blue")
@@ -42,15 +72,16 @@ def display_events(db: Session, token: str):
     table.add_column("Participants", justify="center", style="blue")
     table.add_column("Notes", justify="center", style="blue")
 
-    for event in events:
+    for event in filtered_events:
+        client_name = event.client.full_name if event.client else "N/A"
         support_contact = event.support_contact.complete_name if event.support_contact else "N/A"
         attendees = str(event.attendees) if event.attendees is not None else "0"
-        notes = str(event.notes) if event.notes else "Pas de notes"
+        notes = event.notes if event.notes else "Pas de notes"
 
         table.add_row(
             str(event.id),
             event.event_name,
-            event.client_name,
+            client_name,
             event.date_start.strftime("%Y-%m-%d %H:%M"),
             event.date_end.strftime("%Y-%m-%d %H:%M"),
             event.location,
@@ -62,7 +93,6 @@ def display_events(db: Session, token: str):
     console.print("\n")
     console.print(table)
     console.print("\n")
-
 
 def prompt_create_event(db: Session, user_id: int, token: str):
     """
@@ -113,7 +143,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         (f"{contract.id} - {contract.client.full_name}", contract.id)
         for contract in contracts
         ]
-
+    
     selected_contract_text = inquirer.select(
         message=f"Sélectionnez un contrat pour {selected_client.full_name} :",
         choices=[choice for choice, _ in contract_choices]
@@ -127,12 +157,12 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         (f"{support.id} - {support.complete_name}", support.id)
         for support in supports
         ]
-
+    
     support_contact_text = inquirer.select(
         message="Sélectionnez un contact support :",
         choices=[choice for choice, _ in support_choices]
     ).execute()
-
+    
     support_contact_id = next(
         (id for text, id in support_choices if text == support_contact_text), None
         )
@@ -168,7 +198,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
                 message="Entrez la date de fin (YYYY-MM-DD HH:MM) :"
             ).execute()
             end_dt = datetime.strptime(date_end, "%Y-%m-%d %H:%M")
-            # Validation que la date de fin est après la date de début
+
             if end_dt <= start_dt:
                 console.print(
                     "[red]Erreur : La date de fin doit être après la date de début."
@@ -279,6 +309,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
     date_start = date_start_str if isinstance(date_start_str, datetime) else event.date_start
     date_end = date_end_str if isinstance(date_end_str, datetime) else event.date_end
 
+    # Vérification si la date de fin est après la date de début
     if date_end <= date_start:
         console.print(
             "[red]Erreur : La date de fin doit être après la date de début.[/red]"
@@ -333,7 +364,7 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
             "\n[blue]Aucun événement disponible pour suppression.[/blue]\n"
             )
         return
-
+    
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id) for event in events
         ]
@@ -399,7 +430,7 @@ def event_menu(current_user_role, user_id, token):
             ).execute()
 
             if choice == "Lister les événements":
-                display_events(db, token)
+                display_events(db, current_user_role, user_id, token)
             elif choice == "Ajouter un événement":
                 prompt_create_event(db, user_id, token)
             elif choice == "Modifier un événement":
