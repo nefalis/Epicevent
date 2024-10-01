@@ -1,2 +1,2 @@
 [run]
-omit = view/*,main.py
+omit = view/*,main.py,setup_db.py
