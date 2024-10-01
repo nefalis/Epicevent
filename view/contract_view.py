@@ -35,30 +35,24 @@ def display_contracts(db: Session, token: str, current_user_role: str):
     if not contracts:
         console.print("\n[blue]Aucun contrat trouvé.[/blue]\n")
         return
+    
+    filter_choice = "Tous les contrats"
 
-    # Vérifiez si l'utilisateur fait partie de l'équipe commerciale
     if current_user_role == "commercial":
-        # Demander si un filtre doit être appliqué
         filter_choice = inquirer.select(
             message="Souhaitez-vous appliquer un filtre ?",
             choices=["Tous les contrats", "Contrats signés", "Contrats payés intégralement"]
         ).execute()
 
-        # Appliquer le filtre si nécessaire
         if filter_choice == "Contrats signés":
             contracts = [contract for contract in contracts if contract.statut == "Signé"]
         elif filter_choice == "Contrats payés intégralement":
             contracts = [contract for contract in contracts if contract.remaining_price == 0]
-    else:
-        # Si l'utilisateur n'est pas commercial, ne pas afficher l'option de filtrage
-        console.print("\n[blue]Vous n'avez pas accès aux options de filtrage.[/blue]\n")
 
-    # Si aucun contrat après filtrage
     if not contracts:
         console.print(f"\n[blue]Aucun contrat trouvé pour le filtre : {filter_choice}.[/blue]\n")
         return
 
-    # Affichage des contrats
     table = Table(title=f"\nListe des Contrats ({filter_choice})\n")
     table.add_column("ID", justify="center", style="cyan", no_wrap=True)
     table.add_column("Client", justify="center", style="blue")

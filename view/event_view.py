@@ -27,7 +27,7 @@ def display_events(db: Session, current_user_role: str, user_id: int, token: str
     Affiche tous les événements.
     """
     events = get_all_events(db, token)
-    
+
     if not events:
         console.print("\n[blue]Aucun événement trouvé.[/blue]\n")
         return
@@ -43,28 +43,24 @@ def display_events(db: Session, current_user_role: str, user_id: int, token: str
             choices=["Tous les événements", "Événements attribués à moi"]
         ).execute()
     else:
-        # Si le rôle est inconnu, afficher tous les événements sans filtrage
         filter_choice = "Tous les événements"
-
-    # Appliquer le filtre si nécessaire
     if filter_choice == "Événements sans support" and current_user_role == "gestion":
         filtered_events = [event for event in events if not event.support_contact]
     elif filter_choice == "Événements attribués à moi" and current_user_role == "support":
         filtered_events = [event for event in events if event.support_contact and event.support_contact.id == user_id]
     else:
-        # Si l'utilisateur choisit "Tous les événements", ne filtre pas
         filtered_events = events
 
-    # Si aucun événement après filtrage
     if not filtered_events:
         console.print(f"\n[blue]Aucun événement trouvé pour le filtre : {filter_choice}.[/blue]\n")
         return
 
-    # Afficher les événements filtrés avec toutes les colonnes
     table = Table(title="\nListe des Événements\n")
     table.add_column("ID", justify="center", style="cyan", no_wrap=True)
     table.add_column("Nom de l'événement", justify="center", style="blue")
+    table.add_column("Contrat", justify="center", style="blue")
     table.add_column("Client", justify="center", style="blue")
+    table.add_column("Contact Client", justify="center", style="blue")
     table.add_column("Date de début", justify="center", style="blue")
     table.add_column("Date de fin", justify="center", style="blue")
     table.add_column("Lieu", justify="center", style="blue")
@@ -77,11 +73,15 @@ def display_events(db: Session, current_user_role: str, user_id: int, token: str
         support_contact = event.support_contact.complete_name if event.support_contact else "N/A"
         attendees = str(event.attendees) if event.attendees is not None else "0"
         notes = event.notes if event.notes else "Pas de notes"
+        contract_id = str(event.contract_id) if event.contract_id else "N/A"
+        client_contact = event.client_contact if event.client_contact else "N/A"
 
         table.add_row(
             str(event.id),
             event.event_name,
+            contract_id,
             client_name,
+            client_contact,
             event.date_start.strftime("%Y-%m-%d %H:%M"),
             event.date_end.strftime("%Y-%m-%d %H:%M"),
             event.location,
@@ -93,6 +93,7 @@ def display_events(db: Session, current_user_role: str, user_id: int, token: str
     console.print("\n")
     console.print(table)
     console.print("\n")
+
 
 def prompt_create_event(db: Session, user_id: int, token: str):
     """
@@ -143,7 +144,7 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         (f"{contract.id} - {contract.client.full_name}", contract.id)
         for contract in contracts
         ]
-    
+
     selected_contract_text = inquirer.select(
         message=f"Sélectionnez un contrat pour {selected_client.full_name} :",
         choices=[choice for choice, _ in contract_choices]
@@ -157,26 +158,26 @@ def prompt_create_event(db: Session, user_id: int, token: str):
         (f"{support.id} - {support.complete_name}", support.id)
         for support in supports
         ]
-    
+
     support_contact_text = inquirer.select(
         message="Sélectionnez un contact support :",
         choices=[choice for choice, _ in support_choices]
     ).execute()
-    
+
     support_contact_id = next(
         (id for text, id in support_choices if text == support_contact_text), None
         )
 
     event_name = inquirer.text(
         message="Entrez le nom de l'événement :",
-        validate=lambda result: validate_text(result),
-        invalid_message="Le nom doit contenir"
+        validate=lambda _: True,
+        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
     ).execute()
 
     client_contact = inquirer.text(
         message="Entrez le contact du client :",
-        validate=lambda result: validate_text(result),
-        invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+        validate=lambda result: True,
+        invalid_message="Veuillez entrer un contact valide."
     ).execute()
 
     while True:
@@ -260,7 +261,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
         return
 
     event_choices = [
-        (f"{event.id} - {event.event_name}", event.id)for event in events
+        (f"{event.id} - {event.event_name}", event.id) for event in events
     ]
     event_choices.insert(0, ("Retour en arrière", None))
 
@@ -275,7 +276,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
 
     event_id = next(
         (id for text, id in event_choices if text == event_id), None
-        )
+    )
 
     event = get_event_by_id(db, event_id)
     if not event:
@@ -287,11 +288,26 @@ def prompt_update_event(db: Session, user_id: int, token: str):
                 "Entrez le nouveau nom (laisser vide pour conserver) :",
         validate=lambda result: validate_text(result) if result else True,
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+    ).execute() or event.event_name
+
+    contract_id_input = inquirer.text(
+        message=f"Contract ID actuel : {event.contract_id}. "
+                "Entrez le nouveau contract ID (laisser vide pour conserver) :",
+        validate=lambda result: validate_digits(result) if result else True,
+        invalid_message="Le contract ID doit être un nombre."
     ).execute()
+    contract_id = int(contract_id_input) if contract_id_input else event.contract_id
+
+    client_contact = inquirer.text(
+        message=f"Contact client actuel : {event.client_contact}. "
+                "Entrez le nouveau contact client (laisser vide pour conserver) :",
+        validate=lambda result: True if result else True,
+        invalid_message="Veuillez entrer un contact valide."
+    ).execute() or event.client_contact
 
     date_start_str = inquirer.text(
         message=f"Date de début actuelle : {event.date_start.strftime('%Y-%m-%d %H:%M')}."
-        f"Entrez la nouvelle date de début (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :",
+                f" Entrez la nouvelle date de début (YYYY-MM-DD HH:MM) (laisser vide pour conserver) :",
         validate=lambda result: result == "" or datetime.strptime(result, "%Y-%m-%d %H:%M"),
         filter=lambda result: datetime.strptime(result, "%Y-%m-%d %H:%M") if result else event.date_start
     ).execute()
@@ -313,7 +329,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
     if date_end <= date_start:
         console.print(
             "[red]Erreur : La date de fin doit être après la date de début.[/red]"
-            )
+        )
         return
 
     attendees_input = inquirer.text(
@@ -321,7 +337,7 @@ def prompt_update_event(db: Session, user_id: int, token: str):
                 "Entrez le nouveau nombre de participant (laisser vide pour conserver) :",
         validate=lambda result: validate_digits(result) if result else True,
         invalid_message="Veuillez entrer uniquement des chiffres."
-    ).execute()
+    ).execute() or event.attendees
 
     attendees = int(attendees_input) if attendees_input else event.attendees
 
@@ -330,14 +346,34 @@ def prompt_update_event(db: Session, user_id: int, token: str):
                 "Entrez le nouveau lieu (laisser vide pour conserver) :",
         validate=lambda result: validate_text(result) if result else True,
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
+    ).execute() or event.location
+
+    supports = get_users_by_role(db, role='support')
+    if not supports:
+        console.print("\n[blue]Aucun contact support disponible.[/blue]\n")
+        return
+
+    support_choices = [
+        (f"{support.id} - {support.complete_name}", support.id)
+        for support in supports
+    ]
+    
+    selected_support_text = inquirer.select(
+        message="Sélectionnez un contact support :",
+        choices=[choice for choice, _ in support_choices],
+        default=f"{event.support_contact_id} - {event.support_contact_id}"
     ).execute()
+    
+    support_contact_id = next(
+        (id for text, id in support_choices if text == selected_support_text), None
+    )
 
     notes = inquirer.text(
         message=f"Notes actuelles : {event.notes}. "
                 "Entrez les nouvelles notes (laisser vide pour conserver) :",
         validate=lambda result: validate_text(result) if result else True,
         invalid_message="Le nom doit contenir uniquement des lettres, espaces ou tiret."
-    ).execute()
+    ).execute() or event.notes
 
     update_event(
         db,
@@ -345,13 +381,16 @@ def prompt_update_event(db: Session, user_id: int, token: str):
         token=token,
         event_id=event_id,
         event_name=event_name,
+        contract_id=contract_id,
+        client_contact=client_contact,
         location=location,
+        support_contact_id=support_contact_id,
         notes=notes,
         date_start=date_start,
         date_end=date_end,
         attendees=attendees
     )
-    console.print("\n [blue]Événement mis à jour avec succès ![/blue] \n")
+    console.print("\n[blue]Événement mis à jour avec succès ![/blue]\n")
 
 
 def prompt_delete_event(db: Session, user_id: int, token: str):
@@ -364,7 +403,7 @@ def prompt_delete_event(db: Session, user_id: int, token: str):
             "\n[blue]Aucun événement disponible pour suppression.[/blue]\n"
             )
         return
-    
+
     event_choices = [
         (f"{event.id} - {event.event_name}", event.id) for event in events
         ]
