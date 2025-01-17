@@ -68,7 +68,18 @@ python setup_db.py
 Ce script va initialiser la base de données et créer toutes les tables nécessaires, ainsi qu'un utilisateur administrateur par défaut.
 
 ## Lancement du programme
+
+Numéro d'employé
+```
+ma2212
+```
+Password
+```
+Ef45632147f
+```
+
 Il ne vous reste plus qu'à lancer le fichier `main.py` et à vous connecter avec l'identifiant utilisateur et le mot de passe pour avoir accès au menu :
+
 ```
 python main.py
 ```
